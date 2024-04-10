@@ -15,10 +15,10 @@
         - [Spinful Fermionic basis](#Spinful-fermionic-basis)
 		- [Basis from Expressions](#Basis-from-Expressions)
     - [Operators](#Operators)
-    - [Symmetries](#Symmetries)
-		- [Symmetries as Permutations] (Symmetries-as-Permutations)
-		- [Symmetries from Expressions](Symmetries-from-Expressions)
-		- [Symmetry adapted basis](Symmetry-adapted-basis)
+    - [Symmetry](#Symmetry)
+		- [Symmetry as Permutations](#Symmetries-as-Permutations)
+		- [Symmetry from Expressions](#Symmetries-from-Expressions)
+		- [Symmetry adapted basis](#Symmetry-adapted-basis)
 - [Examples](#Examples)
     - [Simple ED](#Simple-ED)
     - [More complicated ED](#More-complicated-ED)
@@ -76,14 +76,14 @@ and takes into account system symmetries.
 The `lattice_symmetries` implements fast matrix-vector multiplication that can be applied to various problems, 
 such as time evolution or exact diagonalization of many-body Hamiltonians.
 
-The basic objects upon which the machinery is built are `Basis`, `Expression`, `Operator`, and `Symmetries`.
-The `Symmetries` is not separate class, however, they lie in the core of `lattice_symmetries`, so we will consider them separately.
+The basic objects upon which the machinery is built are `Basis`, `Expression`, `Operator`, and `Symmetry`.
+The `Symmetries` is not a separate class, however, it lies in the core of `lattice_symmetries`, so we will consider it separately.
 - `Expression` object is a nice way to work with symbolic representations of operators. It is possible to sum expressions, and multiply them by numbers and each other.
 `Expression` allows not to think about an explicit matrix representation of an operator, and the user can work directly with analytical formulae. 
 - `Basis` object stores a basis of a many-body Hilbert space consisting of spins or fermions with appropriate symmetries.
 Each basis state is represented as a sequence of 0s and 1s (i.e. a sequence of bits), which can be interpreted as a binary number.
 - `Operator` object is an actual operator that can act on individual basis states and their linear combinations. 
-- `Symmetries` is a method to work with symmetry adapted basises.
+- `Symmetry` is a method to work with symmetry adapted basises.
 If an operator has symmmetries, it is useful to work in symmetry-adapted basis, since it can drastically decrease the dimension of the Hilbert space.
 
 Now we will take a look at basic functions and methods for these objects. 
@@ -457,9 +457,9 @@ From this operations one can build the matrix form of an operator.
 It is also possible to apply an operator directly to basis vectors.
 APPLICATION
 
-### Symmetries
+### Symmetry
 
-#### Symmetries as Permutations
+#### Symmetry as Permutations
 
 The full power of `lattice_symmetries` manifests if one use symmetries when constructing 
 symmetry adapted basis and linear operators acting on the corresponding Hilbert space. 
@@ -472,7 +472,7 @@ translation = ls.Permutation([(1 + i) % n for i in range(n)])
 
 ```
 
-####Symmetries from Expressions
+#### Symmetry from Expressions
 
 
 Since later we will need the characters to construct symmetry adapted basises, there are two possibilities.
@@ -494,7 +494,7 @@ symmetries=expr.abelian_permutation_group()
 
 ```
 
-####Symmetry-adapted basis
+#### Symmetry-adapted basis
 
 In order to make calculations with the help of symmetries, we need to construct a symmetry adapted basis.
 The basis is constructed with the help of one dimensional representations of the symmetry group of the Hamiltonian,
