@@ -4,17 +4,21 @@
 
 - [Installing](#Installing)
 - [Basic concepts and functions](#Basic-concepts-and-functions)
-    - [Basis](#Basis)
-        - [Spin basis](#Spin-basis)
-        - [Spinless Fermionic basis](#Spinless-fermionic-basis)
-        - [Spinful Fermionic basis](#Spinful-fermionic-basis)
     - [Expressions](#Expressions)
         - [Primitive operators](#Primitive-operators)
         - [Operator algebra](#Operator-algebra)
         - [Complex expressions](#Complex-expressions)
         - [Properties](#Properties)
+	- [Basis](#Basis)
+        - [Spin basis](#Spin-basis)
+        - [Spinless Fermionic basis](#Spinless-fermionic-basis)
+        - [Spinful Fermionic basis](#Spinful-fermionic-basis)
+		- [Basis from Expressions](#Basis-from-Expressions)
     - [Operators](#Operators)
     - [Symmetries](#Symmetries)
+		- [Symmetries as Permutations] (Symmetries-as-Permutations)
+		- [Symmetries from Expressions](Symmetries-from-Expressions)
+		- [Symmetry adapted basis](Symmetry-adapted-basis)
 - [Examples](#Examples)
     - [Simple ED](#Simple-ED)
     - [More complicated ED](#More-complicated-ED)
@@ -72,18 +76,193 @@ and takes into account system symmetries.
 The `lattice_symmetries` implements fast matrix-vector multiplication that can be applied to various problems, 
 such as time evolution or exact diagonalization of many-body Hamiltonians.
 
-The basic objects upon which the machinery is built are `Basis`, `Expression`, `Operator`, and `Symmetry`.
-- `Basis` object stores a basis of a many-body Hilbert space consisting of spins or fermions with appropriate symmetries.
-Each basis state is represented as a sequence of 0s and 1s (i.e. a sequence of bits), which can be interpreted as a binary number.
+The basic objects upon which the machinery is built are `Basis`, `Expression`, `Operator`, and `Symmetries`.
+The `Symmetries` is not separate class, however, they lie in the core of `lattice_symmetries`, so we will consider them separately.
 - `Expression` object is a nice way to work with symbolic representations of operators. It is possible to sum expressions, and multiply them by numbers and each other.
 `Expression` allows not to think about an explicit matrix representation of an operator, and the user can work directly with analytical formulae. 
+- `Basis` object stores a basis of a many-body Hilbert space consisting of spins or fermions with appropriate symmetries.
+Each basis state is represented as a sequence of 0s and 1s (i.e. a sequence of bits), which can be interpreted as a binary number.
 - `Operator` object is an actual operator that can act on individual basis states and their linear combinations. 
-- `Symmetry` is a method to work with symmetry adapted basises.
+- `Symmetries` is a method to work with symmetry adapted basises.
 If an operator has symmmetries, it is useful to work in symmetry-adapted basis, since it can drastically decrease the dimension of the Hilbert space.
 
 Now we will take a look at basic functions and methods for these objects. 
 
+### Expressions
+
+Expressions are an easy way to work with operators (for example, Hamiltonians) on a symbolic level using second quantization formalism.
+This means that you can use primitive operators such as $\sigma^x$, $\sigma^y$, and $\sigma^z$ to build expressions for your Hamiltonian and observables.
+It is also possible to sum different expressions and multiply them to each other to compose more complicated expressions.
+Let's consider at first the simplest examples. 
+
+#### Primitive operators
+
+At first we need to import `Expr` from lattice-symmetries:
+```sh
+from lattice_symmetries import Expr
+```
+Now we will consider primitives operators defined on site with number 0 as an example, but you can also construct primitive operators residing on other lattice sites:
+
+ - $\sigma^x$ and $S^x$:
+   ```pycon
+   >>> Expr("σˣ₀") == Expr("\\sigma^x_0") #It is possible to use different notations for Expr for primitive operators.
+   #Here we check that they agree. Index 0 means the index of the corresponding site.
+   True
+   >>> Expr("Sˣ₀") == 0.5 * Expr("σˣ₀") #We check that Sˣ₀ is the same as 0.5*σˣ₀.
+   True
+   >>> Expr("σˣ₀").to_dense() #It is also possible to visualize the expressions as matrices.
+   [[0, 1],
+    [1, 0]]
+
+   ```
+   Now, we will take a look at other Pauli and spin matrices.
+
+ - $\sigma^y$ and $S^y$:
+   ```pycon
+   >>> Expr("σʸ₀") == Expr("\\sigma^y_0")
+   True
+   >>> Expr("Sʸ₀") == 0.5 * ls.Expr("σʸ₀")
+   True
+   >>> Expr("σʸ₀").to_dense()
+   [[0, -1j],
+    [1j, 0]]
+   ```
+
+ - $\sigma^z$ and $S^z$:
+   ```pycon
+   >>> Expr("σᶻ₀") == Expr("\\sigma^z_0")
+   True
+   >>> Expr("Sᶻ₀") == 0.5 * Expr("σᶻ₀")
+   True
+   >>> Expr("σᶻ₀").to_dense()
+   [[1, 0],
+    [0, -1]]
+   ```
+    We see that everything works as one would expect.
+
+ - Identity operator $\mathbb{1}$:
+   ```pycon
+   >>> Expr("I", particle="spin-1/2").to_dense()
+   [[1, 0],
+    [0, 1]]
+   ```
+   (*Note:* in this case, we need to explicitly specify the particle type because it cannot be deduced from the expression)
+
+
+
+#### Operator algebra
+
+Primitives can be combined using the `+`, `-`, and `*` operations to build more complex operators.
+Furthermore, expressions can also be multiplied by scalars from the left using the `*` operator.
+
+For example, here are a few ways to write down the Heisenberg interaction between sites 0 and 1
+
+$$
+\mathbf{S}_0 \cdot \mathbf{S}_1 = S^x_0 S^x_1 + S^y_0 S^y_1 + S^z_0 S^z_1
+$$
+
+```pycon
+>>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == Expr("Sx0 Sx1 + Sy0 Sy1 + Sz0 Sz1")
+True
+>>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == \
+             Expr("Sˣ₀") * Expr("Sˣ₁") + Expr("Sʸ₀") * Expr("Sʸ₁") + Expr("Sᶻ₀") * Expr("Sᶻ₁")
+True
+>>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == Expr("0.25 (σˣ₀ σˣ₁ + σʸ₀ σʸ₁ + σᶻ₀ σᶻ₁)")
+True
+>>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == Expr("0.5 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + 0.25 σᶻ₀ σᶻ₁")
+True
+
+#Above we checked that different definitions of this interaction agree. Let's take a look at the corresponding matrix:
+>>> Expr("Sx0 Sx1 + Sy0 Sy1 + Sz0 Sz1").to_dense()
+
+[[ 0.25  0.    0.    0.  ]
+ [ 0.   -0.25  0.5   0.  ]
+ [ 0.    0.5  -0.25  0.  ]
+ [ 0.    0.    0.    0.25]]
+```
+
+Under the hood, lattice-symmetries rewrites all the expressions into the canonical form, simplifying stuff along the way:
+
+```pycon
+>>> str(Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁"))
+"0.25 σᶻ₀ σᶻ₁ + 0.5 σ⁺₀ σ⁻₁ + 0.5 σ⁻₀ σ⁺₁"
+>>> str(Expr("0.5 (σˣ₁ + 1im σʸ₁) - σ⁺₁"))
+"0.0 I"
+>>> str(Expr("σ⁺₁ σ⁺₁"))
+"0.0 I"
+```
+#### Complex expressions
+
+So far, we defined expressions only on a few number of sites, which can be indeed easily written explicitly. Here we will consider more complicated expressions, which require other techniques.
+One of the ways is to use the function `replace_indices`. For example, we can construct the sum of $\sigma^z$ operators.
+
+```pycon
+import operator #import relevant methods
+from functools import reduce
+
+expr1 = Expr("σᶻ₁") #define an elementary expression
+many_exprs = [expr1.replace_indices({1: i}) for i in range(4)] #we apply the permutation of vertices and make the corresponding array
+expr2 = reduce(operator.add, many_exprs) #sum all elementary operations
+print(expr2)
+>>>
+σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
+```
+
+Another way is to define an expression on a graph defined by edges:
+
+```pycon
+edges = [(i,) for i in range(4)] #define graph of 4 vertices 
+expr = Expr("σᶻ₁", sites=edges) #the elementary expression is applied for all vertices
+>>>
+σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
+```
+
+One can use the function `on` for the same effect:
+```
+e=Expr("σᶻ₁")
+expt=e.on(edges)
+>>>
+σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
+```
+
+It is also possible to use `iGraph`:
+```
+import igraph as ig
+
+e=Expr("σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀")
+expt=e.on(ig.Graph.Lattice(dim=[2, 3], circular=True))
+>>>
+σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
+```
+
+
+
+One can see that the results are the same.
+
+#### Properties
+
+One can make standard operations on expressions, such make an adjoint, as well
+
+```pycon
+a = Expr("c†₀ c₁")
+b=a.adjoint() #Makes an adjoint expression
+```
+
+It is also possible to check various properties of expressions:
+```pycon
+>>> a=Expr("\\sigma^z_0")
+>>> a.is_real #If the corresponding matrix real
+True
+>>> a.is_hermitian #If the corresponding matrix hermitian
+True
+>>> a.is_identity #If the corresponding matrix identity
+False
+>>> a.number_sites #Number of sites in the expression
+1
+```
+
 ### Basis
+
 #### Spin basis
 Let's look at simple examples; at first we will not consider additional symmetries.
 
@@ -226,157 +405,11 @@ which gives:
 ```
 as expected.
 
-### Expressions
+####Basis from expressions
 
-Expressions are an easy way to work with operators (for example, Hamiltonians) on a symbolic level using second quantization formalism.
-This means that you can use primitive operators such as $\sigma^x$, $\sigma^y$, and $\sigma^z$ to build expressions for your Hamiltonian and observables.
-It is also possible to sum different expressions and multiply them to each other to compose more complicated expressions.
-Let's consider at first the simplest examples. 
+Before we created basises explicitly, however, there is a way to construct basis directly from expressions.
+EXAMPLE
 
-#### Primitive operators
-
-At first we need to import `Expr` from lattice-symmetries:
-```sh
-from lattice_symmetries import Expr
-```
-Now we will consider primitives operators defined on site with number 0 as an example, but you can also construct primitive operators residing on other lattice sites:
-
- - $\sigma^x$ and $S^x$:
-   ```pycon
-   >>> Expr("σˣ₀") == Expr("\\sigma^x_0") #It is possible to use different notations for Expr for primitive operators.
-   #Here we check that they agree. Index 0 means the index of the corresponding site.
-   True
-   >>> Expr("Sˣ₀") == 0.5 * Expr("σˣ₀") #We check that Sˣ₀ is the same as 0.5*σˣ₀.
-   True
-   >>> Expr("σˣ₀").to_dense() #It is also possible to visualize the expressions as matrices.
-   [[0, 1],
-    [1, 0]]
-
-   ```
-   Now, we will take a look at other Pauli and spin matrices.
-
- - $\sigma^y$ and $S^y$:
-   ```pycon
-   >>> Expr("σʸ₀") == Expr("\\sigma^y_0")
-   True
-   >>> Expr("Sʸ₀") == 0.5 * ls.Expr("σʸ₀")
-   True
-   >>> Expr("σʸ₀").to_dense()
-   [[0, -1j],
-    [1j, 0]]
-   ```
-
- - $\sigma^z$ and $S^z$:
-   ```pycon
-   >>> Expr("σᶻ₀") == Expr("\\sigma^z_0")
-   True
-   >>> Expr("Sᶻ₀") == 0.5 * Expr("σᶻ₀")
-   True
-   >>> Expr("σᶻ₀").to_dense()
-   [[1, 0],
-    [0, -1]]
-   ```
-    We see that everything works as one would expect.
-
- - Identity operator $\mathbb{1}$:
-   ```pycon
-   >>> Expr("I", particle="spin-1/2").to_dense()
-   [[1, 0],
-    [0, 1]]
-   ```
-   (*Note:* in this case, we need to explicitly specify the particle type because it cannot be deduced from the expression)
-
-
-
-#### Operator algebra
-
-Primitives can be combined using the `+`, `-`, and `*` operations to build more complex operators.
-Furthermore, expressions can also be multiplied by scalars from the left using the `*` operator.
-
-For example, here are a few ways to write down the Heisenberg interaction between sites 0 and 1
-
-$$
-\mathbf{S}_0 \cdot \mathbf{S}_1 = S^x_0 S^x_1 + S^y_0 S^y_1 + S^z_0 S^z_1
-$$
-
-```pycon
->>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == Expr("Sx0 Sx1 + Sy0 Sy1 + Sz0 Sz1")
-True
->>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == \
-             Expr("Sˣ₀") * Expr("Sˣ₁") + Expr("Sʸ₀") * Expr("Sʸ₁") + Expr("Sᶻ₀") * Expr("Sᶻ₁")
-True
->>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == Expr("0.25 (σˣ₀ σˣ₁ + σʸ₀ σʸ₁ + σᶻ₀ σᶻ₁)")
-True
->>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == Expr("0.5 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + 0.25 σᶻ₀ σᶻ₁")
-True
-
-#Above we checked that different definitions of this interaction agree. Let's take a look at the corresponding matrix:
->>> Expr("Sx0 Sx1 + Sy0 Sy1 + Sz0 Sz1").to_dense()
-
-[[ 0.25  0.    0.    0.  ]
- [ 0.   -0.25  0.5   0.  ]
- [ 0.    0.5  -0.25  0.  ]
- [ 0.    0.    0.    0.25]]
-```
-
-Under the hood, lattice-symmetries rewrites all the expressions into the canonical form, simplifying stuff along the way:
-
-```pycon
->>> str(Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁"))
-"0.25 σᶻ₀ σᶻ₁ + 0.5 σ⁺₀ σ⁻₁ + 0.5 σ⁻₀ σ⁺₁"
->>> str(Expr("0.5 (σˣ₁ + 1im σʸ₁) - σ⁺₁"))
-"0.0 I"
->>> str(Expr("σ⁺₁ σ⁺₁"))
-"0.0 I"
-```
-#### Complex expressions
-
-So far, we defined expressions only on a few number of sites, which can be indeed easily written explicitly. Here we will consider more complicated expressions, which require other techniques.
-One of the ways is to use the function `replace_indices`. For example, we can construct the sum of $\sigma^z$ operators.
-
-```pycon
-import operator #import relevant methods
-from functools import reduce
-
-expr1 = ls.Expr("σᶻ₁") #define an elementary expression
-many_exprs = [expr1.replace_indices({1: i}) for i in range(4)] #we apply the permutation of vertices and make the corresponding array
-expr2 = reduce(operator.add, many_exprs) #sum all elementary operations
-print(expr2)
->>>
-σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
-```
-
-Another way is to define an expression on a graph defined by edges:
-
-```pycon
-edges = [(i,) for i in range(4)] #define graph of 4 vertices 
-expr = ls.Expr("σᶻ₁", sites=edges) #the elementary expression is applied for all vertices
->>>
-σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
-```
-One can see that the results are the same.
-
-#### Properties
-
-One can make standart operations on expressions, such make an adjoint, as well
-
-```pycon
-a = ls.Expr("c†₀ c₁")
-b=a.adjoint() #Makes an adjoint expression
-```
-
-It is also possible to check various properties of expressions:
-```pycon
->>> a=Expr("\\sigma^z_0")
->>> a.is_real #If the corresponding matrix real
-True
->>> a.is_hermitian #If the corresponding matrix hermitian
-True
->>> a.is_identity #If the corresponding matrix identity
-False
->>> a.number_sites #Number of sites in the expression
-1
-```
 
 ### Operators
 
@@ -421,11 +454,62 @@ opr@vec3
 ```
 From this operations one can build the matrix form of an operator.
 
+It is also possible to apply an operator directly to basis vectors.
+APPLICATION
+
 ### Symmetries
 
+#### Symmetries as Permutations
+
 The full power of `lattice_symmetries` manifests if one use symmetries when constructing 
-symmetry adapted basis and linear operators acting on teh corresponding Hilbert space. 
-The symmetries can be constructed with the help of expressions as well. 
+symmetry adapted basis and linear operators acting on the corresponding Hilbert space. 
+The symmetries are constructed with the help of expressions as well, and are represented as a permutation group of indices (realized as simpy PermutationGroup.)
+
+Let's take a look:
+```
+n=4
+translation = ls.Permutation([(1 + i) % n for i in range(n)])
+
+```
+
+####Symmetries from Expressions
+
+
+Since later we will need the characters to construct symmetry adapted basises, there are two possibilities.
+One can find all permutation symmetries of an expression (this option can be used to study specific sectors):
+```
+from sympy.combinatorics import Permutation, PermutationGroup
+from sympy.core import Rational
+
+ #let's use a simple chain of 4 spins, which has the symmetry group D_4
+symmetries=expr.permutation_group()
+>>>
+ #The result is a sympy PermutationGroup
+```
+
+or the maximum abelian subgroup of the symmetry group:
+```
+symmetries=expr.abelian_permutation_group()
+>>>
+
+```
+
+####Symmetry-adapted basis
+
+In order to make calculations with the help of symmetries, we need to construct a symmetry adapted basis.
+The basis is constructed with the help of one dimensional representations of the symmetry group of the Hamiltonian,
+or in other words, the symmetry (permutation) group of the corresponding expression.
+
+The simplest example would be:
+```
+n=4
+translation = ls.Permutation([(1 + i) % n for i in range(n)]) #we consider one-dimensional translations as before
+b = ls.SpinBasis(number_spins=n, symmetries=[(translation, ls.Rational(k, n))])
+b.build()
+```
+
+An `Operator` for symmetry adapted basis can be build in the same way as without symmetries.
+
 
 ## Examples
 
@@ -448,7 +532,7 @@ At first we create the expression for Heisenberg chain on 10 sites using the met
     )
     basis.build()  # Build the list of representatives, we need it since we're doing ED
 
-# Constructinf the expression
+# Constructing the expression
 edges = [(i, (i + 1) % number_spins) for i in range(number_spins)]
 expr = ls.Expr("2 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + σᶻ₀ σᶻ₁", sites=edges)
 print("Expression:", expr)
@@ -462,8 +546,7 @@ assert expr == expr2 #we check that the expressions are equal
 # Construct the Hamiltonian
 hamiltonian = ls.Operator(basis, expr)
 
-
-# Diagonalize the Hamiltonian using ARPACK
+# Diagonalize the Hamiltonian using ARPACK. The fast matrix-vector multiplication of `lattice-symmetries` will be used
 eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA")
 print("Ground state energy is {}".format(eigenvalues[0]))
 assert np.isclose(eigenvalues[0], -18.06178542)
