@@ -406,7 +406,7 @@ which gives:
 ```
 as expected.
 
-####Basis from Expressions
+#### Basis from Expressions
 
 Before we created basises explicitly, however, there is a way to construct a basis directly from expressions.
 However, in this case, one can obtain only full Fock basis, without restriction on the number of particles.
@@ -478,7 +478,8 @@ p = ls.Permutation([1,2,3,0]) #This permutation shifts the indices, so that 0->1
 ```
 ```
 p = ls.Permutation([0,1,2,3]) #This is the identity permutation
->>> (3) #No cycles, therefore identity. If the largest index doesn't move, it is shown in brackets, the format is used by sympy
+>>> (3) #No cycles, therefore identity. 
+#If the largest index doesn't move, it is shown in brackets, the format is used by sympy
 ```
 ```
 p=ls.Permutation([1,0,3,2]) #Exchange indices 0<->1 and 2<->3
@@ -613,12 +614,16 @@ import scipy
 
 Another example of capabilities of `lattice_symmetries` is time evolution.
 In order to apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
+
 $$
 e^{iHt}=e^{-i(E^{*}_g+aW')t}\Big[J_0(at)+\sum^{\infty}_{n=1}2(-i)^n J_n(at)T_n(H') \Big]
 $$
+
 where we rescale the original Hamiltonian $H$ with bandwidth $[E_g, E_s]$ to the Hamiltonian $H'$ with bandwidth $[-1+\epsilon,1-\epsilon]$, so that the series converges.
 The rescaling takes the form:
+
 $$
 H'=\frac{H-b}{a}
 $$
-where $a=1/(2-\epsilon)$, $b=(E_g+E_s)/2, and $\epsilon$ is a safety factor to make the spectrum of $H'$ liying within $[-1,1]$.
+
+where $a=1/(2-\epsilon)$, $b=(E_g+E_s)/2$, and $\epsilon$ is a safety factor to make the spectrum of $H'$ liying within $[-1,1]$.
