@@ -18,7 +18,7 @@
     - [Symmetry](#Symmetry)
 		- [Symmetry as Permutations](#Symmetries-as-permutations)
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
-		- [Symmetry adapted basis](#Symmetry-adapted-basis)
+		- [Symmetry-adapted basis](#Symmetry-adapted-basis)
 - [Examples](#Examples)
     - [Simple ED](#Simple-ED)
     - [More complicated ED](#More-complicated-ED)
@@ -26,7 +26,7 @@
 
 ## Installing
 
-The first step before we can apply `lattice_symmetries` is to install Nix. The installation process slightly depends on your system and can be found in the [official documentaion](https://nix.dev/install-nix#install-nix).
+The first step before we can apply `lattice_symmetries` is to install Nix. The installation process slightly depends on your system and can be found in the [official documentation](https://nix.dev/install-nix#install-nix).
 In the case of WSL (Windows Subsystem for Linux), it is preferred to install a single-user version:
 
 ```sh
@@ -66,8 +66,8 @@ Now you can build everything using Nix:
 nix develop .#python
 ```
 
-Voila, and you have the working package.
-If you open a new terminal, the last step should be repeated ,i.e., moving to  `lattice-symmetries/python` and typing `nix develop .#python`.
+Voila and you have the working package.
+If you open a new terminal, the last step should be repeated i.e., moving to  `lattice-symmetries/python` and typing `nix develop .#python`.
 
 ## Basic concepts and functions
 
@@ -78,35 +78,35 @@ such as time evolution or exact diagonalization of many-body Hamiltonians.
 
 The basic objects upon which the machinery is built are `Basis`, `Expression`, `Operator`, and `Symmetry`.
 The `Symmetries` is not a separate class, however, it lies in the core of `lattice_symmetries`, so we will consider it separately.
-- `Expression` object is a nice way to work with symbolic representations of operators. It is possible to sum expressions, and multiply them by numbers and each other.
-`Expression` allows not to think about an explicit matrix representation of an operator, and the user can work directly with analytical formulae. 
+- `Expression` object is a nice way to work with symbolic representations of operators. It is possible to sum expressions and multiply them by numbers and each other.
+`Expression` does not require the user to consider an explicit matrix representation of an operator and allows the user to work directly with analytical formulae. 
 - `Basis` object stores a basis of a many-body Hilbert space consisting of spins or fermions with appropriate symmetries.
 Each basis state is represented as a sequence of 0s and 1s (i.e. a sequence of bits), which can be interpreted as a binary number.
 - `Operator` object is an actual operator that can act on individual basis states and their linear combinations. 
-- `Symmetry` is a method to work with symmetry adapted basises.
-If an operator has symmetries, it is useful to work in symmetry-adapted basis, since it can drastically decrease the dimension of the Hilbert space.
+- `Symmetry` is a method to work with symmetry-adapted basis.
+If an operator has symmetries, it is useful to work with a symmetry-adapted basis since it can drastically decrease the dimension of the Hilbert space.
 
-Now we will take a look at basic functions and methods for these objects. 
+Now, we will take a look at basic functions and methods for these objects. 
 
 ### Expressions
 
-Expressions are an easy way to work with operators (for example, Hamiltonians) on a symbolic level using second quantization formalism.
+Expressions are an easy way to work with operators (such as Hamiltonians) on a symbolic level using the second quantization formalism.
 This means that you can use primitive symbols of well-known operators such as $\sigma^x$, $\sigma^y$, and $\sigma^z$ to build expressions for your Hamiltonian and observables.
 It is also possible to sum different expressions and multiply them to each other to compose more complicated expressions.
-Let's consider at first the simplest examples. 
+Let's consider the simplest examples first. 
 
 #### Primitive expressions
 
-At first we need to import `Expr` from lattice-symmetries:
+At first, we need to import `Expr` from lattice-symmetries:
 ```pycon
 from lattice_symmetries import Expr
 ```
-Now we will consider primitive symbols defined on site with number 0 as an example, but you can also construct them residing on other lattice sites:
+Now we will consider primitive symbols defined on a site with index 0 as an example, but you can also construct them residing on other lattice sites:
 
  - $\sigma^x$ and $S^x$:
    ```pycon
    >>> Expr("σˣ₀") == Expr("\\sigma^x_0") #It is possible to use different notations for Expr for primitives.
-   #Here we check that they agree. Index 0 means the index of the corresponding site.
+   #Here, we check that they agree. Index 0 means the index of the corresponding site.
    True
    >>> Expr("Sˣ₀") == 0.5 * Expr("σˣ₀") #We check that Sˣ₀ is the same as 0.5*σˣ₀.
    True
@@ -172,7 +172,7 @@ True
 >>> Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁") == Expr("0.5 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + 0.25 σᶻ₀ σᶻ₁")
 True
 
-#Above we checked that different definitions of this interaction agree. Let's take a look at the corresponding matrix:
+#Above, we checked that different definitions of this interaction agree. Let's take a look at the corresponding matrix:
 >>> Expr("Sx0 Sx1 + Sy0 Sy1 + Sz0 Sz1").to_dense()
 
 [[ 0.25  0.    0.    0.  ]
@@ -193,8 +193,8 @@ Under the hood, lattice-symmetries rewrites all the expressions into the canonic
 ```
 #### Complex expressions
 
-So far, we defined expressions only on a few number of sites, which can be indeed easily written explicitly. Here we will consider more complicated expressions, which require other techniques.
-One of the ways is to use the function `replace_indices`. For example, we can construct the sum of $\sigma^z$s defined on different sites: 
+So far, we have defined expressions only for a system with a few sites, which can be easily written explicitly. Here, we will consider more complicated expressions, which require other techniques.
+One of the ways to do this is by using the function `replace_indices`. For example, we can construct the sum of $\sigma^z$s defined on different sites: 
 
 ```pycon
 import operator #Import relevant methods
@@ -229,17 +229,17 @@ It is also possible to use `iGraph` to define an underlying (hyper)graph:
 ```pycon
 import igraph as ig
 
-e=Expr("σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀") #Here we have two-sites interaction, so we need an actual graph with edges consist of two vertices
+e=Expr("σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀") #Here, we have two-site interaction, so we need an actual graph with edges consisting of two vertices
 expr=e.on(ig.Graph.Lattice(dim=[2, 2])) # The graph is square 2x2
 >>>
 σ⁺₀ σ⁻₁ + σ⁺₀ σ⁻₂ + σ⁻₀ σ⁺₁ + σ⁻₀ σ⁺₂ + σ⁺₁ σ⁻₃ + σ⁻₁ σ⁺₃ + σ⁺₂ σ⁻₃ + σ⁻₂ σ⁺₃
 ```
 However, the method of defining a Hamiltonian on a graph works correctly only if the elementary expression (defined on one site) is homogeneous.
-It is also important that edges of a (hyper)graph should have the same number of vertices as the degree of the elementary expression.
+It is also important that the edges of a (hyper)graph should have the same number of vertices as the degree of the elementary expression.
 
 #### Properties
 
-One can make standard operations on expressions, such make an adjoint, as well
+One can make standard operations on expressions, such as making an adjoint, as well:
 
 ```pycon
 a = Expr("c†₀ c₁")
@@ -261,8 +261,9 @@ False
 
 ### Basis
 
-In this section we will consider generation of basises of various types.
-We will not consider symmetry adapted basises yet, we will do it in the section [Symmetry adapted basis](#Symmetry-adapted-basis).
+In this section, we will consider the generation of basises of various types.
+We will not consider symmetry-adapted bases yet; we will do so in the section [Symmetry-adapted basis](#Symmetry-adapted-basis).
+
 
 #### Spin basis
 Let's look at simple examples; at first we will not consider additional symmetries.
@@ -276,12 +277,15 @@ basis = ls.SpinBasis(3) #We create basis consisting of three $\frac{1}{2}$-spins
 basis.build() #build basis
 print(basis.index(basis.states)) #Print array of indices of basis states
 print(basis.number_states) #Print total number of states in the basis
-for i in range(basis.number_states): #Here we print all basis states as they stored in memory. Without symmetries, basis states equal their index
-    print(basis.states[i], basis.state_to_string(basis.states[i]))  
+
+def show_basis(basis): #Here we print all basis states as they are stored in memory 
+	for i in range(basis.number_states): 
+		print(basis.states[i], basis.state_to_string(basis.states[i])) 
+show_basis(basis)
 >>>
 [0 1 2 3 4 5 6 7]
 8
-0 |000⟩
+0 |000⟩ #Without symmetries, basis states are equal to their index
 1 |001⟩
 2 |010⟩
 3 |011⟩
@@ -292,26 +296,24 @@ for i in range(basis.number_states): #Here we print all basis states as they sto
 ```
 The basis states are equal to their indices and binary representations, as they should be.
 
-We can also consider only a part of the whole Hilbert space with a given number of spin ups (i.e. hamming weight of binary representations).
+We can also consider only a part of the whole Hilbert space with a given number of spins up (i.e. the hamming weight of binary representations).
 We can specify it as follows:
 ```pycon
 basis = ls.SpinBasis(3, hamming_weight=2) #We want the subspace with only 2 spins up 
 basis.build()
-for i in range(basis.number_states): #Print the states in the basis
-    print(basis.states[i], basis.state_to_string(basis.states[i]))  
+show_basis(basis)
 >>>
 3 |011⟩
 5 |101⟩
 6 |110⟩
 ```
-We see that basis states include only spins with 2 spins up. It is also interesting to note that in this case a basis state is not equal to its index.
+We see that basis states include only spins with 2 spins up. It is also interesting to note that, in this case, a basis state is not equal to its index.
 
 Sometimes, our system has spin inversion symmetry, and we can additionally shorten our basis. In this case, we can specify it as follows:
 ```pycon
 basis = ls.SpinBasis(4, spin_inversion=-1) #Spin inversion is present. It is not nessecary to specify hamming weight here, since it is fixed by spin inversion symmetry. 
 basis.build()
-for i in range(basis.number_states):
-    print(basis.states[i], basis.state_to_string(basis.states[i]))  
+show_basis(basis) 
 >>>
 3 |011⟩
 5 |101⟩
@@ -319,14 +321,13 @@ for i in range(basis.number_states):
 ```
 
 #### Spinless Fermionic basis
-We can also consider the basis of fermions without spins. The basis states are stored as integers as for spin basis. However the binary representation has a second quantization interpretation.
+We can also consider the basis of fermions without spins. The basis states are stored as integers as for spin basis. However, the binary representation has a second quantization interpretation.
 Each basis state is given by the sequence of 0s and 1s, where 1 means a fermion on the corresponding site, and 0 means that the site is vacant.
 Let's consider the simplest example of fermions on two sites:
 ```pycon
-basis = ls.SpinlessFermionBasis(2) #We create fermionic basis on 2 sites
+basis = ls.SpinlessFermionBasis(2) #We create a fermionic basis on 2 sites
 basis.build()
-for i in range(basis.number_states):
-    print(basis.states[i], basis.state_to_string(basis.states[i])) 
+show_basis(basis)
 >>>
 0 |00⟩
 1 |01⟩
@@ -337,10 +338,9 @@ as one would expect.
 
 We can specify the number of particles as well:
 ```pycon
-basis = ls.SpinlessFermionBasis(4, number_particles=3) #We create fermionic basis on 4 sites with only 3 fermions
+basis = ls.SpinlessFermionBasis(4, number_particles=3) #We create a fermionic basis on 4 sites with only 3 fermions
 basis.build()
-for i in range(basis.number_states):
-    print(basis.states[i], basis.state_to_string(basis.states[i])) 
+show_basis(basis)
 >>>
 7 |0111⟩
 11 |1011⟩
@@ -354,10 +354,9 @@ We can see that the basis consists of states with three fermions.
 The last case includes fermions with spin. The binary representations of basis states can be read as a pair of (fermions with spin up on a lattice, fermions with spin down on a lattice).
 We can create a basis of spinful fermions as follows:
 ```pycon
-basis = ls.SpinfulFermionBasis(2) #We create basis of spinful fermions on 2 sites
+basis = ls.SpinfulFermionBasis(2) #We create a basis of spinful fermions on 2 sites
 basis.build()
-for i in range(basis.number_states):
-    print(basis.states[i], basis.state_to_string(basis.states[i])) 
+show_basis(basis)
 >>>
 0 |00⟩|00⟩
 1 |00⟩|01⟩
@@ -383,8 +382,7 @@ As before, we can specify a sector of the total Hilbert space with a given numbe
 ```pycon
 basis = ls.SpinfulFermionBasis(2, number_particles=(2,1)) #We specify the numbers of fermions with spins up and down (N_up, N_down)=(2,1)
 basis.build()
-for i in range(basis.number_states):
-    print(basis.states[i], basis.state_to_string(basis.states[i])) 
+show_basis(basis)
 >>>
 7 |01⟩|11⟩
 11 |10⟩|11⟩
@@ -392,8 +390,8 @@ for i in range(basis.number_states):
 
 #### Basis from Expressions
 
-Before we created basises explicitly, however, there is a way to construct a basis directly from expressions.
-However, in this case, one can obtain only full Fock basis, without restriction on the number of particles.
+Before we created a basis explicitly, however, there was a way to construct a basis directly from expressions.
+However, in this case, one can obtain only a full Fock basis without restriction on the number of particles.
 
 ```pycon
 expr=ls.Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁")
@@ -405,14 +403,14 @@ basis.build()
 ### Operators
 
 Based on an expression and a basis, we can build the corresponding operator acting on the chosen basis. Let's at first consider the Hubbard model on two sites without spins.
-One of the ways to contruct an operator is to create an expression and then create the operator:
+One of the ways to construct an operator is to create an expression and then create the operator:
 
 ```pycon
 import lattice_symmetries as ls
 
 op_expr = ls.Expr("-c†₀ c₁-c†₁ c₀+2.0 n₀ n₀+2.0 n₁ n₁")
 basis=ls.SpinlessFermionBasis(2)
-basis.build() #It is nessecary to build the basis before creating an operator
+basis.build() #It is necessary  to build the basis before creating an operator
 opr=ls.Operator(op_expr, basis) #Here we create the operator
 ```
 Another way is to create the expression for each small expression and then add them to each other:
@@ -427,7 +425,7 @@ opr.shape() #We can check the shape of the operator
 (4,4)
 ```
 
-We can make a multiplication of the operator on a vector using standart python notation.
+We can multiply the operator on a vector using standard Python notation.
 
 ```pycon
 vec1=np.array([1.0,0,0,0]) #One should work with floats
@@ -450,8 +448,8 @@ opr@vec3
 
 #### Symmetry as Permutations
 
-The full power of `lattice_symmetries` manifests if one use symmetries when constructing 
-symmetry adapted basis and linear operators acting on the corresponding Hilbert space. 
+The full power of `lattice_symmetries` manifests if one uses symmetries when constructing 
+symmetry-adapted basis and linear operators acting on the corresponding Hilbert space. 
 The symmetries are constructed with the help of expressions, and are represented as a permutation group of indices;
 `lattice_symmetries` uses sympy to represent permutations, therefore one can take a look at sympy documentation for more details.
 
@@ -463,7 +461,7 @@ p = ls.Permutation([1,2,3,0]) #This permutation shifts the indices, so that 0->1
 ```pycon
 p = ls.Permutation([0,1,2,3]) #This is the identity permutation
 >>> (3) #No cycles, therefore identity. 
-#If the largest index doesn't move, it is shown in brackets, the format is used by sympy
+#If the largest index doesn't move, it is shown in brackets; the format is used by sympy
 ```
 ```pycon
 p=ls.Permutation([1,0,3,2]) #Exchange indices 0<->1 and 2<->3
@@ -472,21 +470,21 @@ p=ls.Permutation([1,0,3,2]) #Exchange indices 0<->1 and 2<->3
 
 #### Symmetry from Expressions
 
-In the previous section, we constructed the symmetries by hand, however, this can be done only for relatively easy and small systems.
-In most of the cases, the more powerful and convenient way is to ask `lattice_symmetries` to calculate the simmetries of a given expression. 
+In the previous section, we constructed the symmetries by hand, however, this can only be done for relatively small and simple systems.
+In most cases, the more powerful and convenient way is to ask `lattice_symmetries` to calculate the symmetries of a given expression. 
 
-Since we need the characters to construct symmetry adapted basises, there are two possibilities.
+Since we need the characters to construct symmetry-adapted basis, there are two possibilities.
 
 - One can find all permutation symmetries of an expression:
 
 ```pycon
- #let's use a simple chain of 3 spins, which has the symmetry group D_3
+#Let's use a simple chain of 3 spins, which has the symmetry group D_3
 e=ls.Expr("σ^x_0 σ^x_1")
 expr=e.on(ig.Graph.Lattice(dim=[3], circular=True)) # The periodic chain with 3 sites
 sym=expr.permutation_group()
 >>>
 
-```pycon
+```
 This option can be used to study specific sectors and does not cover the whole Hilbert space.
 
 - Another option is to find the maximum abelian subgroup of the symmetry group:
@@ -496,12 +494,12 @@ ab_sym=expr.abelian_permutation_group()
 
 ```
 
-In this case the sectors cover the whole Hilbert space.
+In this case, the sectors cover the whole Hilbert space.
 
-#### Symmetry adapted basis
+#### Symmetry-adapted basis
 
-In order to make calculations with the help of symmetries, we need to construct a symmetry adapted basis.
-The basis is constructed with the help of one dimensional representations of the symmetry group of the Hamiltonian,
+To make calculations with the help of symmetries, we need to construct a symmetry-adapted basis.
+The basis is constructed with the help of one-dimensional representations of the Hamiltonian's symetry group,
 or in other words, the symmetry (permutation) group of the corresponding expression.
 
 The simplest example would be:
@@ -517,11 +515,11 @@ An `Operator` for symmetry adapted basis can be build in the same way as without
 
 ## Examples
 
-Here we will take a look at different examples of `lattice_symmetries` applications.
+Here, we will take a look at different examples of `lattice_symmetries` applications.
 
 ### Simple ED
 
-We will strat with the simplest example of exact diagonalization. We will consider Heisenberg chain on 10 sites and diagonalization with the help of symmetries.
+We will start with the simplest example of exact diagonalization. We will consider Heisenberg chain on 10 sites and diagonalization with the help of symmetries.
 For that, we will combine methods described in the previous sections.
 
 ```pycon
@@ -544,11 +542,11 @@ basis = ls.SpinBasis(
 	# NOTE: we don't actually need to specify hamming_weight when spin_inversion
 	# is set. The library will guess that hamming_weight = number_spins // 2.
 	spin_inversion=-1,
-	symmetries=[T, P], #Here we use the characters of the whole symmetry group (it's worth noting that, in general, translations and parity don't commute)
+	symmetries=[T, P], #Here, we use the characters of the whole symmetry group (it's worth noting that, in general, translations and parity don't commute)
 )
-basis.build()  # Build the list of representatives, we need it since we're doing ED
+basis.build()  # Build the list of representatives. We need it since we're doing ED
 
-# Constructing the expression of the hamiltonian
+# Constructing the expression of the Hamiltonian
 edges = [(i, (i + 1) % number_spins) for i in range(number_spins)]
 expr = ls.Expr("2 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + σᶻ₀ σᶻ₁", sites=edges)
 print("Expression:", expr)
@@ -568,7 +566,7 @@ eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA
 print("Ground state energy is {}".format(eigenvalues[0]))
 assert np.isclose(eigenvalues[0], -18.06178542)
 
-#Here we used a symmetry adapted basis, and therefore we were restricted to a specific sector of the total Hilbert space.
+#Above, we used the symmetry-adapted basis, and therefore we were restricted to the specific sector of the total Hilbert space.
 #Since the considered system is relatively small, we can make the diagonalization in the full basis and check that we chose the right sector.
 
 new_basis = ls.SpinBasis(
@@ -596,8 +594,8 @@ import scipy
 
 ### Time evolution
 
-Another example of capabilities of `lattice_symmetries` is time evolution.
-In order to apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
+Another example of the capabilities of `lattice_symmetries` is time evolution.
+To apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
 
 $$
 e^{iHt}=e^{-i(E^{*}_g+aW')t}[J_0(at)+\sum\limits^{\infty} 2(-i)^n J_n(at)T_n(H')]
