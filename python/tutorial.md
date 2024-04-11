@@ -98,7 +98,7 @@ Let's consider at first the simplest examples.
 #### Primitive expressions
 
 At first we need to import `Expr` from lattice-symmetries:
-```sh
+```pycon
 from lattice_symmetries import Expr
 ```
 Now we will consider primitive symbols defined on site with number 0 as an example, but you can also construct them residing on other lattice sites:
@@ -218,7 +218,7 @@ expr = Expr("σᶻ₁", sites=edges) #The elementary expression is applied for a
 ```
 
 One can use the function `on` for the same effect:
-```
+```pycon
 e=Expr("σᶻ₁")
 expt=e.on(edges)
 >>>
@@ -226,7 +226,7 @@ expt=e.on(edges)
 ```
 
 It is also possible to use `iGraph` to define an underlying (hyper)graph:
-```
+```pycon
 import igraph as ig
 
 e=Expr("σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀") #Here we have two-sites interaction, so we need an actual graph with edges consist of two vertices
@@ -269,7 +269,7 @@ Let's look at simple examples; at first we will not consider additional symmetri
 
 The simplest example would be a spin basis:
 
-```sh
+```pycon
 import lattice_symmetries as ls
  
 basis = ls.SpinBasis(3) #We create basis consisting of three $\frac{1}{2}$-spins (each spin can be |0⟩ or |1⟩) 
@@ -278,10 +278,7 @@ print(basis.index(basis.states)) #Print array of indices of basis states
 print(basis.number_states) #Print total number of states in the basis
 for i in range(basis.number_states): #Here we print all basis states as they stored in memory. Without symmetries, basis states equal their index
     print(basis.states[i], basis.state_to_string(basis.states[i]))  
-```
-
-The result looks like:
-```sh
+>>>
 [0 1 2 3 4 5 6 7]
 8
 0 |000⟩
@@ -297,14 +294,12 @@ The basis states are equal to their indices and binary representations, as they 
 
 We can also consider only a part of the whole Hilbert space with a given number of spin ups (i.e. hamming weight of binary representations).
 We can specify it as follows:
-```sh
+```pycon
 basis = ls.SpinBasis(3, hamming_weight=2) #We want the subspace with only 2 spins up 
 basis.build()
 for i in range(basis.number_states): #Print the states in the basis
     print(basis.states[i], basis.state_to_string(basis.states[i]))  
-```
-The output is:
-```sh
+>>>
 3 |011⟩
 5 |101⟩
 6 |110⟩
@@ -312,14 +307,12 @@ The output is:
 We see that basis states include only spins with 2 spins up. It is also interesting to note that in this case a basis state is not equal to its index.
 
 Sometimes, our system has spin inversion symmetry, and we can additionally shorten our basis. In this case, we can specify it as follows:
-```sh
+```pycon
 basis = ls.SpinBasis(4, spin_inversion=-1) #Spin inversion is present. It is not nessecary to specify hamming weight here, since it is fixed by spin inversion symmetry. 
 basis.build()
 for i in range(basis.number_states):
     print(basis.states[i], basis.state_to_string(basis.states[i]))  
-```
-We have the basis states:
-```sh
+>>>
 3 |011⟩
 5 |101⟩
 6 |110⟩
@@ -329,14 +322,12 @@ We have the basis states:
 We can also consider the basis of fermions without spins. The basis states are stored as integers as for spin basis. However the binary representation has a second quantization interpretation.
 Each basis state is given by the sequence of 0s and 1s, where 1 means a fermion on the corresponding site, and 0 means that the site is vacant.
 Let's consider the simplest example of fermions on two sites:
-```sh
+```pycon
 basis = ls.SpinlessFermionBasis(2) #We create fermionic basis on 2 sites
 basis.build()
 for i in range(basis.number_states):
     print(basis.states[i], basis.state_to_string(basis.states[i])) 
-```
-which gives:
-```sh
+>>>
 0 |00⟩
 1 |01⟩
 2 |10⟩
@@ -345,14 +336,12 @@ which gives:
 as one would expect.
 
 We can specify the number of particles as well:
-```sh
+```pycon
 basis = ls.SpinlessFermionBasis(4, number_particles=3) #We create fermionic basis on 4 sites with only 3 fermions
 basis.build()
 for i in range(basis.number_states):
     print(basis.states[i], basis.state_to_string(basis.states[i])) 
-```
-which gives:
-```sh
+>>>
 7 |0111⟩
 11 |1011⟩
 13 |1101⟩
@@ -364,14 +353,12 @@ We can see that the basis consists of states with three fermions.
 
 The last case includes fermions with spin. The binary representations of basis states can be read as a pair of (fermions with spin up on a lattice, fermions with spin down on a lattice).
 We can create a basis of spinful fermions as follows:
-```sh
+```pycon
 basis = ls.SpinfulFermionBasis(2) #We create basis of spinful fermions on 2 sites
 basis.build()
 for i in range(basis.number_states):
     print(basis.states[i], basis.state_to_string(basis.states[i])) 
-```
-which gives:
-```sh
+>>>
 0 |00⟩|00⟩
 1 |00⟩|01⟩
 2 |00⟩|10⟩
@@ -393,25 +380,22 @@ We see that binary representation now means the second quantization of fermions 
 
 As before, we can specify a sector of the total Hilbert space with a given number of fermions with spin down and spin up:
 
-```sh
+```pycon
 basis = ls.SpinfulFermionBasis(2, number_particles=(2,1)) #We specify the numbers of fermions with spins up and down (N_up, N_down)=(2,1)
 basis.build()
 for i in range(basis.number_states):
     print(basis.states[i], basis.state_to_string(basis.states[i])) 
-```
-which gives:
-```sh
+>>>
 7 |01⟩|11⟩
 11 |10⟩|11⟩
 ```
-as expected.
 
 #### Basis from Expressions
 
 Before we created basises explicitly, however, there is a way to construct a basis directly from expressions.
 However, in this case, one can obtain only full Fock basis, without restriction on the number of particles.
 
-```
+```pycon
 expr=ls.Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁")
 basis=expr.full_basis()
 basis.build()
@@ -472,16 +456,16 @@ The symmetries are constructed with the help of expressions, and are represented
 `lattice_symmetries` uses sympy to represent permutations, therefore one can take a look at sympy documentation for more details.
 
 Let's take a look at a couple of examples:
-```
+```pycon
 p = ls.Permutation([1,2,3,0]) #This permutation shifts the indices, so that 0->1, 1->2, 2->3, 3->0
 >>> (0 1 2 3) #The same permutation written in the cycle representation
 ```
-```
+```pycon
 p = ls.Permutation([0,1,2,3]) #This is the identity permutation
 >>> (3) #No cycles, therefore identity. 
 #If the largest index doesn't move, it is shown in brackets, the format is used by sympy
 ```
-```
+```pycon
 p=ls.Permutation([1,0,3,2]) #Exchange indices 0<->1 and 2<->3
 >>> (0 1)(2 3) #Two cycles
 ```
@@ -495,18 +479,18 @@ Since we need the characters to construct symmetry adapted basises, there are tw
 
 - One can find all permutation symmetries of an expression:
 
-```
+```pycon
  #let's use a simple chain of 3 spins, which has the symmetry group D_3
 e=ls.Expr("σ^x_0 σ^x_1")
 expr=e.on(ig.Graph.Lattice(dim=[3], circular=True)) # The periodic chain with 3 sites
 sym=expr.permutation_group()
 >>>
 
-```
+```pycon
 This option can be used to study specific sectors and does not cover the whole Hilbert space.
 
 - Another option is to find the maximum abelian subgroup of the symmetry group:
-```
+```pycon
 ab_sym=expr.abelian_permutation_group()
 >>>
 
@@ -521,7 +505,7 @@ The basis is constructed with the help of one dimensional representations of the
 or in other words, the symmetry (permutation) group of the corresponding expression.
 
 The simplest example would be:
-```
+```pycon
 n=3
 translation = ls.Permutation([(1 + i) % n for i in range(n)]) #we consider one-dimensional translations as before
 b = ls.SpinBasis(number_spins=n, symmetries=[(translation, ls.Rational(k, n))])
