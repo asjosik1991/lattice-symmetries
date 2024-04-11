@@ -616,7 +616,7 @@ Another example of capabilities of `lattice_symmetries` is time evolution.
 In order to apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
 
 $$
-e^{iHt}=e^{-i(E^{*}_g+aW')t}[J_0(at)+\sum 2(-i)^n J_n(at)T_n(H')]
+e^{iHt}=e^{-i(E^{*}_g+aW')t}[J_0(at)+\sum^{\infty} 2(-i)^n J_n(at)T_n(H')]
 $$
 
 $$
