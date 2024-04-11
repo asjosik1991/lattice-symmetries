@@ -16,7 +16,7 @@
 		- [Basis from Expressions](#Basis-from-expressions)
     - [Operators](#Operators)
     - [Symmetry](#Symmetry)
-		- [Symmetry as Permutations](#Symmetry-as-permutations)
+		- [Symmetry as Permutations](#Symmetries-as-permutations)
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry adapted basis](#Symmetry-adapted-basis)
 - [Examples](#Examples)
@@ -230,7 +230,7 @@ It is also possible to use `iGraph` to define an underlying (hyper)graph:
 import igraph as ig
 
 e=Expr("σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀") #Here we have two-sites interaction, so we need an actual graph with edges consist of two vertices
-expt=e.on(ig.Graph.Lattice(dim=[2, 2])) # The graph is square 2x2
+expr=e.on(ig.Graph.Lattice(dim=[2, 2])) # The graph is square 2x2
 >>>
 σ⁺₀ σ⁻₁ + σ⁺₀ σ⁻₂ + σ⁻₀ σ⁺₁ + σ⁻₀ σ⁺₂ + σ⁺₁ σ⁻₃ + σ⁻₁ σ⁺₃ + σ⁺₂ σ⁻₃ + σ⁻₂ σ⁺₃
 ```
@@ -406,10 +406,16 @@ which gives:
 ```
 as expected.
 
-####Basis from expressions
+####Basis from Expressions
 
-Before we created basises explicitly, however, there is a way to construct basis directly from expressions.
-EXAMPLE
+Before we created basises explicitly, however, there is a way to construct a basis directly from expressions.
+However, in this case, one can obtain only full Fock basis, without restriction on the number of particles.
+
+```
+expr=ls.Expr("Sˣ₀ Sˣ₁ + Sʸ₀ Sʸ₁ + Sᶻ₀ Sᶻ₁")
+basis=expr.full_basis()
+basis.build()
+```
 
 
 ### Operators
@@ -455,10 +461,6 @@ opr@vec3
 >>>
 [ 0.  4. -2.  0.]
 ```
-From this operations one can build the matrix form of an operator.
-
-It is also possible to apply an operator directly to basis vectors.
-APPLICATION
 
 ### Symmetry
 
@@ -466,36 +468,50 @@ APPLICATION
 
 The full power of `lattice_symmetries` manifests if one use symmetries when constructing 
 symmetry adapted basis and linear operators acting on the corresponding Hilbert space. 
-The symmetries are constructed with the help of expressions, and are represented as a permutation group of indices.
+The symmetries are constructed with the help of expressions, and are represented as a permutation group of indices;
+`lattice_symmetries` uses sympy to represent permutations, therefore one can take a look at sympy documentation for more details.
 
-Let's take a look:
+Let's take a look at a couple of examples:
 ```
-n=4
-translation = ls.Permutation([(1 + i) % n for i in range(n)])
-
+p = ls.Permutation([1,2,3,0]) #This permutation shifts the indices, so that 0->1, 1->2, 2->3, 3->0
+>>> (0 1 2 3) #The same permutation written in the cycle representation
+```
+```
+p = ls.Permutation([0,1,2,3]) #This is the identity permutation
+>>> (3) #No cycles, therefore identity. If the largest index doesn't move, it is shown in brackets, the format is used by sympy
+```
+```
+p=ls.Permutation([1,0,3,2]) #Exchange indices 0<->1 and 2<->3
+>>> (0 1)(2 3) #Two cycles
 ```
 
 #### Symmetry from Expressions
 
+In the previous section, we constructed the symmetries by hand, however, this can be done only for relatively easy and small systems.
+In most of the cases, the more powerful and convenient way is to ask `lattice_symmetries` to calculate the simmetries of a given expression. 
 
-Since later we will need the characters to construct symmetry adapted basises, there are two possibilities.
-One can find all permutation symmetries of an expression (this option can be used to study specific sectors):
-```
-from sympy.combinatorics import Permutation, PermutationGroup
-from sympy.core import Rational
+Since we need the characters to construct symmetry adapted basises, there are two possibilities.
 
- #let's use a simple chain of 4 spins, which has the symmetry group D_4
-symmetries=expr.permutation_group()
->>>
- #The result is a sympy PermutationGroup
-```
+- One can find all permutation symmetries of an expression:
 
-or the maximum abelian subgroup of the symmetry group:
 ```
-symmetries=expr.abelian_permutation_group()
+ #let's use a simple chain of 3 spins, which has the symmetry group D_3
+e=ls.Expr("σ^x_0 σ^x_1")
+expr=e.on(ig.Graph.Lattice(dim=[3], circular=True)) # The periodic chain with 3 sites
+sym=expr.permutation_group()
 >>>
 
 ```
+This option can be used to study specific sectors and does not cover the whole Hilbert space.
+
+- Another option is to find the maximum abelian subgroup of the symmetry group:
+```
+ab_sym=expr.abelian_permutation_group()
+>>>
+
+```
+
+In this case the sectors cover the whole Hilbert space.
 
 #### Symmetry adapted basis
 
@@ -505,7 +521,7 @@ or in other words, the symmetry (permutation) group of the corresponding express
 
 The simplest example would be:
 ```
-n=4
+n=3
 translation = ls.Permutation([(1 + i) % n for i in range(n)]) #we consider one-dimensional translations as before
 b = ls.SpinBasis(number_spins=n, symmetries=[(translation, ls.Rational(k, n))])
 b.build()
@@ -587,6 +603,22 @@ assert np.isclose(eigenvalues[0], -18.06178542)
 
 Now let's consider a more complicated example of ED.
 
+```pycon
+import lattice_symmetries as ls
+import numpy as np
+import scipy
+```
+
 ### Time evolution
 
 Another example of capabilities of `lattice_symmetries` is time evolution.
+In order to apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
+$$
+e^{iHt}=e^{-i(E^{*}_g+aW')t}\Big[J_0(at)+\sum^{\infty}_{n=1}2(-i)^n J_n(at)T_n(H') \Big]
+$$
+where we rescale the original Hamiltonian $H$ with bandwidth $[E_g, E_s]$ to the Hamiltonian $H'$ with bandwidth $[-1+\epsilon,1-\epsilon]$, so that the series converges.
+The rescaling takes the form:
+$$
+H'=\frac{H-b}{a}
+$$
+where $a=1/(2-\epsilon)$, $b=(E_g+E_s)/2, and $\epsilon$ is a safety factor to make the spectrum of $H'$ liying within $[-1,1]$.
