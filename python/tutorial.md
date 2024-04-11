@@ -5,8 +5,8 @@
 - [Installing](#Installing)
 - [Basic concepts and functions](#Basic-concepts-and-functions)
     - [Expressions](#Expressions)
-        - [Primitive operators](#Primitive-operators)
-        - [Operator algebra](#Operator-algebra)
+        - [Primitive expressions](#Primitive-expressions)
+        - [Algebra of expressions](#Algebra-of-expressions)
         - [Complex expressions](#Complex-expressions)
         - [Properties](#Properties)
 	- [Basis](#Basis)
@@ -16,8 +16,8 @@
 		- [Basis from Expressions](#Basis-from-expressions)
     - [Operators](#Operators)
     - [Symmetry](#Symmetry)
-		- [Symmetry as Permutations](#Symmetries-as-permutations)
-		- [Symmetry from Expressions](#Symmetries-from-expressions)
+		- [Symmetry as Permutations](#Symmetry-as-permutations)
+		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry adapted basis](#Symmetry-adapted-basis)
 - [Examples](#Examples)
     - [Simple ED](#Simple-ED)
@@ -91,21 +91,21 @@ Now we will take a look at basic functions and methods for these objects.
 ### Expressions
 
 Expressions are an easy way to work with operators (for example, Hamiltonians) on a symbolic level using second quantization formalism.
-This means that you can use primitive operators such as $\sigma^x$, $\sigma^y$, and $\sigma^z$ to build expressions for your Hamiltonian and observables.
+This means that you can use primitive symbols of well-known operators such as $\sigma^x$, $\sigma^y$, and $\sigma^z$ to build expressions for your Hamiltonian and observables.
 It is also possible to sum different expressions and multiply them to each other to compose more complicated expressions.
 Let's consider at first the simplest examples. 
 
-#### Primitive operators
+#### Primitive expressions
 
 At first we need to import `Expr` from lattice-symmetries:
 ```sh
 from lattice_symmetries import Expr
 ```
-Now we will consider primitives operators defined on site with number 0 as an example, but you can also construct primitive operators residing on other lattice sites:
+Now we will consider primitive symbols defined on site with number 0 as an example, but you can also construct them residing on other lattice sites:
 
  - $\sigma^x$ and $S^x$:
    ```pycon
-   >>> Expr("σˣ₀") == Expr("\\sigma^x_0") #It is possible to use different notations for Expr for primitive operators.
+   >>> Expr("σˣ₀") == Expr("\\sigma^x_0") #It is possible to use different notations for Expr for primitives.
    #Here we check that they agree. Index 0 means the index of the corresponding site.
    True
    >>> Expr("Sˣ₀") == 0.5 * Expr("σˣ₀") #We check that Sˣ₀ is the same as 0.5*σˣ₀.
@@ -150,9 +150,9 @@ Now we will consider primitives operators defined on site with number 0 as an ex
 
 
 
-#### Operator algebra
+#### Algebra of expressions
 
-Primitives can be combined using the `+`, `-`, and `*` operations to build more complex operators.
+Primitives can be combined using the `+`, `-`, and `*` operations to build more complex expressions.
 Furthermore, expressions can also be multiplied by scalars from the left using the `*` operator.
 
 For example, here are a few ways to write down the Heisenberg interaction between sites 0 and 1
@@ -194,25 +194,25 @@ Under the hood, lattice-symmetries rewrites all the expressions into the canonic
 #### Complex expressions
 
 So far, we defined expressions only on a few number of sites, which can be indeed easily written explicitly. Here we will consider more complicated expressions, which require other techniques.
-One of the ways is to use the function `replace_indices`. For example, we can construct the sum of $\sigma^z$ operators.
+One of the ways is to use the function `replace_indices`. For example, we can construct the sum of $\sigma^z$s defined on different sites: 
 
 ```pycon
-import operator #import relevant methods
+import operator #Import relevant methods
 from functools import reduce
 
-expr1 = Expr("σᶻ₁") #define an elementary expression
-many_exprs = [expr1.replace_indices({1: i}) for i in range(4)] #we apply the permutation of vertices and make the corresponding array
-expr2 = reduce(operator.add, many_exprs) #sum all elementary operations
+expr1 = Expr("σᶻ₁") #Define an elementary expression
+many_exprs = [expr1.replace_indices({1: i}) for i in range(4)] #We apply the permutation of vertices and make the corresponding array
+expr2 = reduce(operator.add, many_exprs) #Sum all elementary operations
 print(expr2)
 >>>
 σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
 ```
 
-Another way is to define an expression on a graph defined by edges:
+Another way is to define an expression on a (hyper)graph defined by edges:
 
 ```pycon
-edges = [(i,) for i in range(4)] #define graph of 4 vertices 
-expr = Expr("σᶻ₁", sites=edges) #the elementary expression is applied for all vertices
+edges = [(i,) for i in range(4)] #Define graph of 4 vertices. Edges consist only of one element, because the elementary expression is linear
+expr = Expr("σᶻ₁", sites=edges) #The elementary expression is applied for all vertices
 >>>
 σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
 ```
@@ -225,19 +225,17 @@ expt=e.on(edges)
 σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
 ```
 
-It is also possible to use `iGraph`:
+It is also possible to use `iGraph` to define an underlying (hyper)graph:
 ```
 import igraph as ig
 
-e=Expr("σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀")
-expt=e.on(ig.Graph.Lattice(dim=[2, 3], circular=True))
+e=Expr("σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀") #Here we have two-sites interaction, so we need an actual graph with edges consist of two vertices
+expt=e.on(ig.Graph.Lattice(dim=[2, 2])) # The graph is square 2x2
 >>>
-σᶻ₀ + σᶻ₁ + σᶻ₂ + σᶻ₃
+σ⁺₀ σ⁻₁ + σ⁺₀ σ⁻₂ + σ⁻₀ σ⁺₁ + σ⁻₀ σ⁺₂ + σ⁺₁ σ⁻₃ + σ⁻₁ σ⁺₃ + σ⁺₂ σ⁻₃ + σ⁻₂ σ⁺₃
 ```
-
-
-
-One can see that the results are the same.
+However, the method of defining a Hamiltonian on a graph works correctly only if the elementary expression (defined on one site) is homogeneous.
+It is also important that edges of a (hyper)graph should have the same number of vertices as the degree of the elementary expression.
 
 #### Properties
 
@@ -262,6 +260,9 @@ False
 ```
 
 ### Basis
+
+In this section we will consider generation of basises of various types.
+We will not consider symmetry adapted basises yet, we will do it in the section [Symmetry adapted basis](#Symmetry-adapted-basis).
 
 #### Spin basis
 Let's look at simple examples; at first we will not consider additional symmetries.
@@ -417,10 +418,12 @@ Based on an expression and a basis, we can build the corresponding operator acti
 One of the ways to contruct an operator is to create an expression and then create the operator:
 
 ```pycon
+import lattice_symmetries as ls
+
 op_expr = ls.Expr("-c†₀ c₁-c†₁ c₀+2.0 n₀ n₀+2.0 n₁ n₁")
 basis=ls.SpinlessFermionBasis(2)
 basis.build() #It is nessecary to build the basis before creating an operator
-opr=ls.Operator(basis, op_expr) #Here we create the operator
+opr=ls.Operator(op_expr, basis) #Here we create the operator
 ```
 Another way is to create the expression for each small expression and then add them to each other:
 ```pycon
@@ -428,7 +431,7 @@ op_expr = ls.Expr("-c†₀ c₁")
 op_expr -= ls.Expr("c†₁ c₀")
 op_expr += 2*ls.Expr("n₀ n₀")
 op_expr += 2*ls.Expr("n₁ n₁")
-opr=ls.Operator(basis, op_expr)
+opr=ls.Operator(op_expr, basis)
 opr.shape() #We can check the shape of the operator
 >>>
 (4,4)
@@ -463,7 +466,7 @@ APPLICATION
 
 The full power of `lattice_symmetries` manifests if one use symmetries when constructing 
 symmetry adapted basis and linear operators acting on the corresponding Hilbert space. 
-The symmetries are constructed with the help of expressions as well, and are represented as a permutation group of indices (realized as simpy PermutationGroup.)
+The symmetries are constructed with the help of expressions, and are represented as a permutation group of indices.
 
 Let's take a look:
 ```
@@ -494,7 +497,7 @@ symmetries=expr.abelian_permutation_group()
 
 ```
 
-#### Symmetry-adapted basis
+#### Symmetry adapted basis
 
 In order to make calculations with the help of symmetries, we need to construct a symmetry adapted basis.
 The basis is constructed with the help of one dimensional representations of the symmetry group of the Hamiltonian,
@@ -518,21 +521,33 @@ Here we will take a look at different examples of `lattice_symmetries` applicati
 ### Simple ED
 
 We will strat with the simplest example of exact diagonalization. We will consider Heisenberg chain on 10 sites and diagonalization with the help of symmetries.
-For that, we combine all the considerd methods.
-At first we create the expression for Heisenberg chain on 10 sites using the methods from the section [Complex expressions](#Complex-expressions).
+For that, we will combine methods described in the previous sections.
 
 ```pycon
-# Constructing the basis
-    basis = ls.SpinBasis(
-        number_spins=number_spins,
-        # NOTE: we don't actually need to specify hamming_weight when spin_inversion
-        # is set. The library will guess that hamming_weight = number_spins / 2.
-        spin_inversion=-1,
-        symmetries=symmetries,
-    )
-    basis.build()  # Build the list of representatives, we need it since we're doing ED
+import lattice_symmetries as ls
+import numpy as np
+import scipy
 
-# Constructing the expression
+number_spins = 10  # System size
+
+# Constructing symmetries
+sites = np.arange(number_spins)
+# Momentum in x direction with phase φ=1/2 (i.e., with the eigenvalue λ=exp(-2πiφ)=-1)
+T = (ls.Permutation((sites + 1) % number_spins), ls.Rational(1, 2))
+# Parity with eigenvalue λ=-1
+P = (ls.Permutation(sites[::-1]), ls.Rational(1, 2))
+
+# Constructing the basis
+basis = ls.SpinBasis(
+	number_spins=number_spins,
+	# NOTE: we don't actually need to specify hamming_weight when spin_inversion
+	# is set. The library will guess that hamming_weight = number_spins // 2.
+	spin_inversion=-1,
+	symmetries=[T, P], #Here we use the characters of the whole symmetry group (it's worth noting that, in general, translations and parity don't commute)
+)
+basis.build()  # Build the list of representatives, we need it since we're doing ED
+
+# Constructing the expression of the hamiltonian
 edges = [(i, (i + 1) % number_spins) for i in range(number_spins)]
 expr = ls.Expr("2 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + σᶻ₀ σᶻ₁", sites=edges)
 print("Expression:", expr)
@@ -544,12 +559,28 @@ expr2 = reduce(operator.add, many_exprs)
 assert expr == expr2 #we check that the expressions are equal
 
 # Construct the Hamiltonian
-hamiltonian = ls.Operator(basis, expr)
+hamiltonian = ls.Operator(expr, basis)
 
-# Diagonalize the Hamiltonian using ARPACK. The fast matrix-vector multiplication of `lattice-symmetries` will be used
+# Diagonalize the Hamiltonian using ARPACK. The fast matrix-vector multiplication of `lattice-symmetries` will be used,
+#because hamiltonian is a lattice-symmetry operator
 eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA")
 print("Ground state energy is {}".format(eigenvalues[0]))
 assert np.isclose(eigenvalues[0], -18.06178542)
+
+#Here we used a symmetry adapted basis, and therefore we were restricted to a specific sector of the total Hilbert space.
+#Since the considered system is relatively small, we can make the diagonalization in the full basis and check that we chose the right sector.
+
+new_basis = ls.SpinBasis(
+	number_spins=number_spins,
+	spin_inversion=-1,
+)
+new_basis.build()
+new_hamiltonian = ls.Operator(expr, new_basis)
+eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA")
+print("Ground state energy is {}".format(eigenvalues[0]))
+assert np.isclose(eigenvalues[0], -18.06178542)
+
+#Indeed, the outcome is the same within machine precision. 
 ```
 
 ### More complicated ED
