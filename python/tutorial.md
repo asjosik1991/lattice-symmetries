@@ -84,7 +84,7 @@ The `Symmetries` is not a separate class, however, it lies in the core of `latti
 Each basis state is represented as a sequence of 0s and 1s (i.e. a sequence of bits), which can be interpreted as a binary number.
 - `Operator` object is an actual operator that can act on individual basis states and their linear combinations. 
 - `Symmetry` is a method to work with symmetry adapted basises.
-If an operator has symmmetries, it is useful to work in symmetry-adapted basis, since it can drastically decrease the dimension of the Hilbert space.
+If an operator has symmetries, it is useful to work in symmetry-adapted basis, since it can drastically decrease the dimension of the Hilbert space.
 
 Now we will take a look at basic functions and methods for these objects. 
 
