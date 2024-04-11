@@ -614,6 +614,7 @@ import scipy
 
 Another example of capabilities of `lattice_symmetries` is time evolution.
 In order to apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
+
 $$
 e^{iHt}=e^{-i(E^{*}_g+aW')t
 $$
