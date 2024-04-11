@@ -86,7 +86,7 @@ Each basis state is represented as a sequence of 0s and 1s (i.e. a sequence of b
 - `Symmetry` is a method to work with symmetry-adapted basis.
 If an operator has symmetries, it is useful to work with a symmetry-adapted basis since it can drastically decrease the dimension of the Hilbert space.
 
-Now, we will take a look at basic functions and methods for these objects. 
+Now, we will take a look at basic functions and methods for these entities. 
 
 ### Expressions
 
@@ -475,43 +475,66 @@ In most cases, the more powerful and convenient way is to ask `lattice_symmetrie
 
 Since we need the characters to construct symmetry-adapted basis, there are two possibilities.
 
-- One can find all permutation symmetries of an expression:
+- One can find all permutation symmetries of an expression.
+This option can be used to study specific sectors and does not cover the whole Hilbert space.
+
+As a simple test case, we can consider a chain of 3 spins with the symmetry group $D_3=S_3$. This group is already non-abelian.
 
 ```pycon
-#Let's use a simple chain of 3 spins, which has the symmetry group D_3
 e=ls.Expr("σ^x_0 σ^x_1")
 expr=e.on(ig.Graph.Lattice(dim=[3], circular=True)) # The periodic chain with 3 sites
 sym=expr.permutation_group()
 >>>
-
+PermutationGroup([
+    (1 2),
+    (2)(0 1),
+    (0 1 2),
+    (0 2 1),
+    (0 2)]) 
+#The identity element is always present, so it is not shown.
+#The group has 6 elements, as it should
 ```
-This option can be used to study specific sectors and does not cover the whole Hilbert space.
 
-- Another option is to find the maximum abelian subgroup of the symmetry group:
+- Another option is to find the maximum abelian subgroup of the symmetry group. In this case, the sectors cover the whole Hilbert space.
+In the case of the same 3-site chain, we have:
 ```pycon
 ab_sym=expr.abelian_permutation_group()
 >>>
-
+PermutationGroup([
+    (0 1 2), #translation by 1
+    (0 2 1)]) #translation by 2
+#The maximal abelian sugroup consists of 2 translations and identity
 ```
-
-In this case, the sectors cover the whole Hilbert space.
 
 #### Symmetry-adapted basis
 
 To make calculations with the help of symmetries, we need to construct a symmetry-adapted basis.
-The basis is constructed with the help of one-dimensional representations of the Hamiltonian's symetry group,
-or in other words, the symmetry (permutation) group of the corresponding expression.
+The basis is constructed with the help of one-dimensional representations of the operator symmetry group,
+or, in other words, the symmetry (permutation) group of the corresponding expression.
+
+We describe the characters of the symmetry group as a list of tuples:
+```pycon
+[(permutation, rational number)]
+```
+where a permutation is a symmetry of the expression, and a rational number is its phase, defining the Hilbert space sector.
+One can think about this list as a list of symmetry generators with corresponding characters.
+If one considers only abelian symmetries, then the generator characters can be any rational number of the form $k/n$, 
+where $n$ is the order of the generator and $k$ is a natural number.
+However, if the symmetry group is non-abelian, the phases should be chosen in a proper way,
+so that characters of group elements organize a one-dimension representation of the symmetry group.
 
 The simplest example would be:
 ```pycon
-n=3
-translation = ls.Permutation([(1 + i) % n for i in range(n)]) #we consider one-dimensional translations as before
-b = ls.SpinBasis(number_spins=n, symmetries=[(translation, ls.Rational(k, n))])
+p = ls.Permutation([1,2,0])
+b = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It is the trivial character
 b.build()
 ```
 
-An `Operator` for symmetry adapted basis can be build in the same way as without symmetries.
+An `Operator` for symmetry-adapted basis is built in the same way as without symmetries:
 
+```pycon
+opr=ls.Operator(expr,basis)
+```
 
 ## Examples
 
@@ -608,4 +631,4 @@ $$
 H'=\frac{H-b}{a}
 $$
 
-where $a=1/(2-\epsilon)$, $b=(E_g+E_s)/2$, and $\epsilon$ is a safety factor to make the spectrum of $H'$ liying within $[-1,1]$.
+where $a=1/(2-\epsilon)$, $b=(E_g+E_s)/2$, and $\epsilon$ is a safety factor to make the spectrum of $H'$ be within $[-1,1]$.
