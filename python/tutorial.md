@@ -616,7 +616,7 @@ Another example of capabilities of `lattice_symmetries` is time evolution.
 In order to apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
 
 $$
-e^{iHt}=e^{-i(E^{*}_g+aW')t}\Big[J_0(at)+\sum^{\infty}_{n=1}2(-i)^n J_n(at)T_n(H') \Big]
+e^{iHt}=e^{-i(E^{*}_g+aW')t}[J_0(at)+\sum^{\infty}_{n=1}2(-i)^n J_n(at)T_n(H')]
 $$
 
 where we rescale the original Hamiltonian $H$ with bandwidth $[E_g, E_s]$ to the Hamiltonian $H'$ with bandwidth $[-1+\epsilon,1-\epsilon]$, so that the series converges.
