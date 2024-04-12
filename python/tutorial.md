@@ -16,7 +16,7 @@
 		- [Basis from Expressions](#Basis-from-expressions)
     - [Operators](#Operators)
     - [Symmetry](#Symmetry)
-		- [Symmetry as Permutations](#Symmetries-as-permutations)
+		- [Symmetry as Permutations](#Symmetry-as-permutations)
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry-adapted basis](#Symmetry-adapted-basis)
 - [Examples](#Examples)
@@ -531,9 +531,9 @@ $$
 \hat P |\psi\rangle=e^{2\pi i \phi}|\psi\rangle
 $$
 
-where $\hat P$ is the operator representing the permutation, $\psi$ is its eigenvector and $\phi$ is the rational number.
+where $\hat P$ is the operator representing the permutation, $\psi$ is a vector from the chosen sector and $\phi$ is the rational number.
 
-One can think about this list of tuples a list of symmetry generators with corresponding phases.
+One can think about this list of tuples as a list of symmetry generators with corresponding phases.
 If one considers only abelian symmetries, then the generator phases can be any rational number of the form $k/n$, 
 where $n$ is the order of the generator and $k$ is a natural number.
 However, if the symmetry group is non-abelian, the phases should be chosen in a proper way,
@@ -556,7 +556,7 @@ b2.build()
 ```
 When making calculations, one needs to choose which sectors are suitable for the given task.
 
-When creating the `Operator`, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
+When creating an `Operator`, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
 An `Operator` for symmetry-adapted basis is built in the same way as without symmetries:
 
 ```pycon
@@ -593,6 +593,7 @@ number_spins = 10  # System size
 ```
 
 Since the lattice is simple, we can construct the symmetries by hand and use one-dimensional representation of the whole symmetry group.
+It is worth noting that it is only possible, because we choose the proper sector for parity and translations permutations, which don't commute.
 ```pycon
 # Constructing symmetries
 sites = np.arange(number_spins)
@@ -602,7 +603,7 @@ T = (ls.Permutation((sites + 1) % number_spins), ls.Rational(1, 2))
 P = (ls.Permutation(sites[::-1]), ls.Rational(1, 2))
 ```
 
-Now, we construct the spin basis with 0 average magnetization.
+Now, we construct the spin basis with zero magnetization.
 ```pycon
 # Constructing the basis
 basis = ls.SpinBasis(
@@ -610,7 +611,7 @@ basis = ls.SpinBasis(
 	# NOTE: we don't actually need to specify hamming_weight when spin_inversion
 	# is set. The library will guess that hamming_weight = number_spins // 2.
 	spin_inversion=-1,
-	symmetries=[T, P], #Here, we use the characters of the whole symmetry group (it's worth noting that, in general, translations and parity don't commute)
+	symmetries=[T, P], #Here, we use the characters of the whole symmetry group 	
 )
 basis.build()  # Build the list of representatives. We need it since we're doing ED
 ```
