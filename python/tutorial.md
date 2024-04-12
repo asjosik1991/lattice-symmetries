@@ -20,8 +20,8 @@
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry-adapted basis](#Symmetry-adapted-basis)
 - [Examples](#Examples)
-    - [ED, 1D chain](#Ed,-1d-chain)
-    - [ED, Star graph](#Ed,-star-graph)
+    - [ED of 1D chain](#Ed-of-1d-chain)
+    - [ED of Star graph](#Ed-of-star-graph)
     - [Time evolution](#Time-evolution)
 
 ## Installing
@@ -599,7 +599,7 @@ opr=ls.Operator(expression,basis) # Make the operator in symmetry-adapted basis
 
 Here, we will take a look at different examples of `lattice_symmetries` applications.
 
-### ED, 1D chain
+### ED of 1D chain
 
 We will start with the simplest example of exact diagonalization. We will consider Heisenberg chain on 10 sites and diagonalization with the help of symmetries.
 For that, we will combine methods described in the previous sections.
@@ -676,7 +676,7 @@ assert np.isclose(eigenvalues[0], -18.06178542)
 Indeed, the outcome is the same within machine precision. 
 
 
-### ED, Star graph
+### ED of Star graph
 
 In the previous example, we considered a 1D chain, where we knew the graph's symmetries and could code them by hand.
 Sometimes, that task requires much time or is even practically impossible.
