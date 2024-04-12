@@ -20,8 +20,8 @@
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry-adapted basis](#Symmetry-adapted-basis)
 - [Examples](#Examples)
-    - [Simple ED](#Simple-ED)
-    - [More complicated ED](#More-complicated-ED)
+    - [ED, 1D chain](#Ed,-1d-chain)
+    - [ED, Star graph](#Ed,-star-graph)
     - [Time evolution](#Time-evolution)
 
 ## Installing
@@ -454,7 +454,7 @@ We discuss this in more detail in the section [Symmetry-adapted basis](#Symmetry
 The full power of `lattice_symmetries` manifests if one uses symmetries when constructing 
 symmetry-adapted basis and linear operators acting on the corresponding Hilbert space. 
 The symmetries are constructed with the help of expressions, and are represented as a permutation group of indices;
-`lattice_symmetries` uses sympy to represent permutations, therefore one can take a look at [sympy documentation](https://docs.sympy.org/latest/modules/combinatorics/permutations.html) for more details.
+`lattice_symmetries` uses sympy to represent permutations, therefore one can take a look at [`sympy` documentation](https://docs.sympy.org/latest/modules/combinatorics/permutations.html) for more details.
 
 Let's take a look at a couple of examples:
 ```pycon
@@ -471,6 +471,19 @@ p=ls.Permutation([1,0,3,2]) #Exchange indices 0<->1 and 2<->3
 >>> (0 1)(2 3) #Two cycles
 ```
 
+We can use some of the `sympy` functions to analyze permutations.
+For example, if one wants to find the order of a permutation:
+```pycon
+p = ls.Permutation([1,2,3,0])
+p.order()
+>>>
+4
+>>>
+p**(p.order()) #check that p^4==1
+>>>
+Permutation(3)
+```
+
 #### Symmetry from Expressions
 
 In the previous section, we constructed the symmetries by hand, however, this can only be done for relatively small and simple systems.
@@ -484,7 +497,9 @@ This option can be used to study specific sectors and does not cover the whole H
 As a simple test case, we can consider a chain of 3 spins with the symmetry group $D_3=S_3$. This group is already non-abelian.
 
 ```pycon
-e=ls.Expr("σ^x_0 σ^x_1")
+import igraph as ig
+
+e=ls.Expr("σ^x_0 σ^x_1") #A simple expression defined on an edge
 expr=e.on(ig.Graph.Lattice(dim=[3], circular=True)) # The periodic chain with 3 sites
 sym=expr.permutation_group()
 >>>
@@ -498,8 +513,10 @@ PermutationGroup([
 #The group has 6 elements, as it should
 ```
 
-- Another option is to find the maximum abelian subgroup of the symmetry group. In this case, the sectors cover the whole Hilbert space.
-In the case of the same 3-site chain, we have:
+- Another option is to find the maximum abelian subgroup of the symmetry group (usually it coincides with the translation subgroup).
+In this case, the sectors cover the whole Hilbert space.
+
+For the same 3-site chain, we have:
 ```pycon
 ab_sym=expr.abelian_permutation_group()
 >>>
@@ -509,10 +526,8 @@ PermutationGroup([
 #The maximal abelian sugroup consists of 2 translations and identity
 ```
 
-These functions return a sympy permutation group. This allows us to apply all the existing sympy functions and analyze the symmetries of expressions.
-For more details, one can look [at sympy documentation](https://docs.sympy.org/latest/modules/combinatorics/perm_groups.html).
-
-Here, we will consider a few methods that can be particularly useful.
+These functions return a sympy permutation group. This allows us to apply all the existing `sympy` functions and analyze the symmetries of expressions.
+For more details, one can look [at `sympy` documentation](https://docs.sympy.org/latest/modules/combinatorics/perm_groups.html).
 
 #### Symmetry-adapted basis
 
@@ -534,12 +549,13 @@ $$
 where $\hat P$ is the operator representing the permutation, $\psi$ is a vector from the chosen sector and $\phi$ is the rational number.
 
 One can think about this list of tuples as a list of symmetry generators with corresponding phases.
-If one considers only abelian symmetries, then the generator phases can be any rational number of the form $k/n$, 
-where $n$ is the order of the generator and $k$ is a natural number.
+However, the generators are not necessarily independent, and one can pass the whole symmetry group with the appropriate phases.
+If one considers only abelian symmetries and independent generators, then the generator phases can be any rational number of the form $k/n$, 
+where $n$ is the order of the generator, and $k$ is a natural number.
 However, if the symmetry group is non-abelian, the phases should be chosen in a proper way,
 so that characters of group elements organize a one-dimension representation of the symmetry group.
 
-The simplest example would be:
+Now, we are ready to build a symmetry-adapted basis. Th simplest example would be:
 ```pycon
 p = ls.Permutation([1,2,0])
 b0 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It defines the trivial character
@@ -556,18 +572,34 @@ b2.build()
 ```
 When making calculations, one needs to choose which sectors are suitable for the given task.
 
-When creating an `Operator`, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
-An `Operator` for symmetry-adapted basis is built in the same way as without symmetries:
+Let's consider another example, where we will work with the symmetries of expressions:
+```pycon
+e=ls.Expr("σ^x_0 σ^x_1")
+expr=e.on(ig.Graph.Full(5)) # We define our lattice to be a complete graph with 5 vertices
+sym=expr.permutation_group()
+rep=[(p,ls.Rational(0,1)) for p in sym] #The trivial one-dimensional representation 
+#Notice that we can use the whole symmetry group for constructing 1D-representation
+basis = ls.SpinBasis(5, symmetries=rep) 
+basis.build()
+```
+
+The last step is to make calculations in symmetry adapted basis. For that we need to create an `Operator` object.
+When making an operator, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
+An operator for symmetry-adapted basis is built in the same way as without symmetries. Schematically, the code would look as follows:
 
 ```pycon
-opr=ls.Operator(expr,basis)
+Make an expression
+Calculate symmetries
+Build symmetry-adapted basis
+
+opr=ls.Operator(expression,basis) # Make the operator in symmetry-adapted basis
 ```
 
 ## Examples
 
 Here, we will take a look at different examples of `lattice_symmetries` applications.
 
-### Simple ED
+### ED, 1D chain
 
 We will start with the simplest example of exact diagonalization. We will consider Heisenberg chain on 10 sites and diagonalization with the help of symmetries.
 For that, we will combine methods described in the previous sections.
@@ -579,6 +611,8 @@ import lattice_symmetries as ls
 import numpy as np
 import scipy
 
+number_spins = 10  # System size
+
 # Constructing the expression of the Hamiltonian
 edges = [(i, (i + 1) % number_spins) for i in range(number_spins)]
 expr = ls.Expr("2 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + σᶻ₀ σᶻ₁", sites=edges)
@@ -589,7 +623,6 @@ two_site_expr = ls.Expr("2 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + σᶻ₀ σ
 many_exprs = [two_site_expr.replace_indices({0: i, 1: j}) for (i, j) in edges]
 expr2 = reduce(operator.add, many_exprs)
 assert expr == expr2 #we check that the expressions are equal
-number_spins = 10  # System size
 ```
 
 Since the lattice is simple, we can construct the symmetries by hand and use one-dimensional representation of the whole symmetry group.
@@ -643,15 +676,42 @@ assert np.isclose(eigenvalues[0], -18.06178542)
 Indeed, the outcome is the same within machine precision. 
 
 
-### More complicated ED
+### ED, Star graph
 
-Now let's consider a more complicated example of ED.
-
+In the previous example, we considered a 1D chain, where we knew the graph's symmetries and could code them by hand.
+Sometimes, that task requires much time or is even practically impossible.
+Nevertheless, symmetries can still help, especially when the required sector lies in the one-dimensional representation of the whole symmetry group.
+As an example, we will consider the Heisenberg model on a star graph, where every vertex connects only to the center:
+ 
 ```pycon
 import lattice_symmetries as ls
 import numpy as np
 import scipy
+import igraph as ig
+
+number_spins=7
+expr = ls.Expr("2 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + σᶻ₀ σᶻ₁").on(ig.Graph.Star(number_spins))
+sym=expr.permutation_group()
+rep=[(p,ls.Rational(0,1)) for p in sym] #The trivial one-dimensional representation 
+basis = ls.SpinBasis(number_spins, symmetries=rep) #We don't choose specific magnetization
+basis.build()
+hamiltonian = ls.Operator(expr, basis)
+eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA")
+print("Ground state energy is {}".format(eigenvalues[0]))
+assert np.isclose(eigenvalues[0], -8)
 ```
+Since the system is small, we can check that we chose the right sector:
+
+```pycon
+basis = ls.SpinBasis(number_spins) #No symmetries
+basis.build()
+hamiltonian = ls.Operator(expr, basis)
+eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA")
+print("Ground state energy is {}".format(eigenvalues[0]))
+assert np.isclose(eigenvalues[0], -8)
+```
+
+Of course, the considered example is somewhat artificial, nevertheless, it nicely demonstrates one of the possible applications of `lattice_symmetries`.
 
 ### Time evolution
 
@@ -659,7 +719,7 @@ Another example of the capabilities of `lattice_symmetries` is time evolution.
 To apply time evolution, we will use the Chebyshev expansion of the matrix exponent:
 
 $$
-e^{iHt}=e^{-i(E^{*}_g+aW')t}[J_0(at)+\sum\limits^{\infty} 2(-i)^n J_n(at)T_n(H')]
+e^{iHt}=e^{-i\frac{bt}{a}}[J_0(at)+\sum\limits^{\infty} 2(-i)^n J_n(at)T_n(H')]
 $$
 
 where we rescale the original Hamiltonian $H$ with bandwidth $[E_g, E_s]$ to the Hamiltonian $H'$ with bandwidth $[-1+\epsilon,1-\epsilon]$, so that the series converges.
@@ -670,3 +730,5 @@ H'=\frac{H-b}{a}
 $$
 
 where $a=1/(2-\epsilon)$, $b=(E_g+E_s)/2$, and $\epsilon$ is a safety factor to make the spectrum of $H'$ be within $[-1,1]$.
+
+We will consider the basic version of the algorithm, where instead of usual `numpy` arrays we will use `lattice_symmetries` operators.
