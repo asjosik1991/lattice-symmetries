@@ -444,6 +444,9 @@ opr@vec3
 [ 0.  4. -2.  0.]
 ```
 
+The operators for the symmetry-adapted basis are created and manipulated in the same way.
+We discuss this in more detail in the section [Symmetry-adapted basis](#Symmetry-adapted-basis).
+
 ### Symmetry
 
 #### Symmetry as Permutations
@@ -451,7 +454,7 @@ opr@vec3
 The full power of `lattice_symmetries` manifests if one uses symmetries when constructing 
 symmetry-adapted basis and linear operators acting on the corresponding Hilbert space. 
 The symmetries are constructed with the help of expressions, and are represented as a permutation group of indices;
-`lattice_symmetries` uses sympy to represent permutations, therefore one can take a look at sympy documentation for more details.
+`lattice_symmetries` uses sympy to represent permutations, therefore one can take a look at [sympy documentation](https://docs.sympy.org/latest/modules/combinatorics/permutations.html) for more details.
 
 Let's take a look at a couple of examples:
 ```pycon
@@ -506,6 +509,11 @@ PermutationGroup([
 #The maximal abelian sugroup consists of 2 translations and identity
 ```
 
+These functions return a sympy permutation group. This allows us to apply all the existing sympy functions and analyze the symmetries of expressions.
+For more details, one can look [at sympy documentation](https://docs.sympy.org/latest/modules/combinatorics/perm_groups.html).
+
+Here, we will consider a few methods that can be particularly useful.
+
 #### Symmetry-adapted basis
 
 To make calculations with the help of symmetries, we need to construct a symmetry-adapted basis.
@@ -517,8 +525,16 @@ We describe the characters of the symmetry group as a list of tuples:
 [(permutation, rational number)]
 ```
 where a permutation is a symmetry of the expression, and a rational number is its phase, defining the Hilbert space sector.
-One can think about this list as a list of symmetry generators with corresponding characters.
-If one considers only abelian symmetries, then the generator characters can be any rational number of the form $k/n$, 
+To be more precise, the phase is described as follows:
+
+$$
+\hat P |\psi\rangle=e^{2\pi i \phi}|\psi\rangle
+$$
+
+where $\hat P$ is the operator representing the permutation, $\psi$ is its eigenvector and $\phi$ is the rational number.
+
+One can think about this list of tuples a list of symmetry generators with corresponding phases.
+If one considers only abelian symmetries, then the generator phases can be any rational number of the form $k/n$, 
 where $n$ is the order of the generator and $k$ is a natural number.
 However, if the symmetry group is non-abelian, the phases should be chosen in a proper way,
 so that characters of group elements organize a one-dimension representation of the symmetry group.
@@ -526,10 +542,21 @@ so that characters of group elements organize a one-dimension representation of 
 The simplest example would be:
 ```pycon
 p = ls.Permutation([1,2,0])
-b = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It is the trivial character
-b.build()
+b0 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It defines the trivial character
+b0.build()
 ```
 
+The order of the permutation is 3, wo we can have 2 other possible sectors:
+```pycon
+b1 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(1, 3))]) #The phase is 1/3, the total phase is 2/3π
+b1.build()
+
+b2 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(2, 3))]) #The phase is 2/3, the total phase is 4/3π
+b2.build()
+```
+When making calculations, one needs to choose which sectors are suitable for the given task.
+
+When creating the `Operator`, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
 An `Operator` for symmetry-adapted basis is built in the same way as without symmetries:
 
 ```pycon
@@ -545,29 +572,12 @@ Here, we will take a look at different examples of `lattice_symmetries` applicat
 We will start with the simplest example of exact diagonalization. We will consider Heisenberg chain on 10 sites and diagonalization with the help of symmetries.
 For that, we will combine methods described in the previous sections.
 
+First, we generate the expression for the Hamiltonian.
+
 ```pycon
 import lattice_symmetries as ls
 import numpy as np
 import scipy
-
-number_spins = 10  # System size
-
-# Constructing symmetries
-sites = np.arange(number_spins)
-# Momentum in x direction with phase φ=1/2 (i.e., with the eigenvalue λ=exp(-2πiφ)=-1)
-T = (ls.Permutation((sites + 1) % number_spins), ls.Rational(1, 2))
-# Parity with eigenvalue λ=-1
-P = (ls.Permutation(sites[::-1]), ls.Rational(1, 2))
-
-# Constructing the basis
-basis = ls.SpinBasis(
-	number_spins=number_spins,
-	# NOTE: we don't actually need to specify hamming_weight when spin_inversion
-	# is set. The library will guess that hamming_weight = number_spins // 2.
-	spin_inversion=-1,
-	symmetries=[T, P], #Here, we use the characters of the whole symmetry group (it's worth noting that, in general, translations and parity don't commute)
-)
-basis.build()  # Build the list of representatives. We need it since we're doing ED
 
 # Constructing the expression of the Hamiltonian
 edges = [(i, (i + 1) % number_spins) for i in range(number_spins)]
@@ -579,7 +589,33 @@ two_site_expr = ls.Expr("2 (σ⁺₀ σ⁻₁ + σ⁺₁ σ⁻₀) + σᶻ₀ σ
 many_exprs = [two_site_expr.replace_indices({0: i, 1: j}) for (i, j) in edges]
 expr2 = reduce(operator.add, many_exprs)
 assert expr == expr2 #we check that the expressions are equal
+number_spins = 10  # System size
+```
 
+Since the lattice is simple, we can construct the symmetries by hand and use one-dimensional representation of the whole symmetry group.
+```pycon
+# Constructing symmetries
+sites = np.arange(number_spins)
+# Momentum in x direction with phase φ=1/2 (i.e., with the eigenvalue λ=exp(-2πiφ)=-1)
+T = (ls.Permutation((sites + 1) % number_spins), ls.Rational(1, 2))
+# Parity with eigenvalue λ=-1
+P = (ls.Permutation(sites[::-1]), ls.Rational(1, 2))
+```
+
+Now, we construct the spin basis with 0 average magnetization.
+```pycon
+# Constructing the basis
+basis = ls.SpinBasis(
+	number_spins=number_spins,
+	# NOTE: we don't actually need to specify hamming_weight when spin_inversion
+	# is set. The library will guess that hamming_weight = number_spins // 2.
+	spin_inversion=-1,
+	symmetries=[T, P], #Here, we use the characters of the whole symmetry group (it's worth noting that, in general, translations and parity don't commute)
+)
+basis.build()  # Build the list of representatives. We need it since we're doing ED
+```
+ The last step is to construct the actual Hamiltonian matrix and diagonalize it.
+```pycon
 # Construct the Hamiltonian
 hamiltonian = ls.Operator(expr, basis)
 
@@ -588,10 +624,11 @@ hamiltonian = ls.Operator(expr, basis)
 eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA")
 print("Ground state energy is {}".format(eigenvalues[0]))
 assert np.isclose(eigenvalues[0], -18.06178542)
+```
+Above, we used the symmetry-adapted basis, and therefore we were restricted to the specific sector of the total Hilbert space.
+Since the considered system is relatively small, we can make the diagonalization in the full basis and check that we chose the right sector.
 
-#Above, we used the symmetry-adapted basis, and therefore we were restricted to the specific sector of the total Hilbert space.
-#Since the considered system is relatively small, we can make the diagonalization in the full basis and check that we chose the right sector.
-
+```pycon
 new_basis = ls.SpinBasis(
 	number_spins=number_spins,
 	spin_inversion=-1,
@@ -601,9 +638,9 @@ new_hamiltonian = ls.Operator(expr, new_basis)
 eigenvalues, eigenstates = scipy.sparse.linalg.eigsh(hamiltonian, k=1, which="SA")
 print("Ground state energy is {}".format(eigenvalues[0]))
 assert np.isclose(eigenvalues[0], -18.06178542)
-
-#Indeed, the outcome is the same within machine precision. 
 ```
+Indeed, the outcome is the same within machine precision. 
+
 
 ### More complicated ED
 
