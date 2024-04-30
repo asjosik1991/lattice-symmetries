@@ -555,33 +555,45 @@ where $n$ is the order of the generator, and $k$ is a natural number.
 However, if the symmetry group is non-abelian, the phases should be chosen in a proper way,
 so that characters of group elements organize a one-dimension representation of the symmetry group.
 
-Now, we are ready to build a symmetry-adapted basis. Th simplest example would be:
-```pycon
-p = ls.Permutation([1,2,0])
-b0 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It defines the trivial character
-b0.build()
-```
+Now, we are ready to build a symmetry-adapted basis. 
+There are two main ways to do that. The first way is to generate the representations by hand, and the second is to use the built-in functions of `lattice-symmetries`.
 
-The order of the permutation is 3, wo we can have 2 other possible sectors:
-```pycon
-b1 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(1, 3))]) #The phase is 1/3, the total phase is 2/3π
-b1.build()
+- 	Manually generated representations:
 
-b2 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(2, 3))]) #The phase is 2/3, the total phase is 4/3π
-b2.build()
-```
-When making calculations, one needs to choose which sectors are suitable for the given task.
+	The simplest example would be:
+	```pycon
+	p = ls.Permutation([1,2,0]) #translation by 1
+	b0 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It defines the trivial character
+	b0.build()
+	```
 
-Let's consider another example, where we will work with the symmetries of expressions:
-```pycon
-e=ls.Expr("σ^x_0 σ^x_1")
-expr=e.on(ig.Graph.Full(5)) # We define our lattice to be a complete graph with 5 vertices
-sym=expr.permutation_group()
-rep=[(p,ls.Rational(0,1)) for p in sym] #The trivial one-dimensional representation 
-#Notice that we can use the whole symmetry group for constructing 1D-representation
-basis = ls.SpinBasis(5, symmetries=rep) 
-basis.build()
-```
+	The order of the permutation is 3, wo we can have 2 other possible sectors:
+	```pycon
+	b1 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(1, 3))]) #The phase is 1/3, the total phase is 2/3π
+	b1.build()
+
+	b2 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(2, 3))]) #The phase is 2/3, the total phase is 4/3π
+	b2.build()
+	```
+	When making calculations, one needs to choose which sectors are suitable for the given task.
+
+	Let's consider another example, where we will work with the symmetries of expressions:
+	```pycon
+	e=ls.Expr("σ^x_0 σ^x_1")
+	expr=e.on(ig.Graph.Full(5)) # We define our lattice to be a complete graph with 5 vertices
+	sym=expr.permutation_group()
+	rep=[(p,ls.Rational(0,1)) for p in sym] #The trivial one-dimensional representation 
+	#Notice that we can use the whole symmetry group for constructing 1D-representation
+	basis = ls.SpinBasis(5, symmetries=rep) 
+	basis.build()
+	```
+
+	It should be noticed, that one can define a representation by any of its subset, and `lattice_symmetry` will generate the whole representation by the given generators.
+	Of course, the generators should be consistent.
+
+- 	Functions `hilbert_space_sectors` and `ground_state_sectors`:
+
+	
 
 The last step is to make calculations in symmetry adapted basis. For that we need to create an `Operator` object.
 When making an operator, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
