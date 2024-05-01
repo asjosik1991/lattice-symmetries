@@ -261,7 +261,7 @@ False
 
 ### Basis
 
-In this section, we will consider the generation of basises of various types.
+In this section, we will consider the generation of bases of various types.
 We will not consider symmetry-adapted bases yet; we will do so in the section [Symmetry-adapted basis](#Symmetry-adapted-basis).
 
 
@@ -589,11 +589,54 @@ There are two main ways to do that. The first way is to generate the representat
 	```
 
 	It should be noticed, that one can define a representation by any of its subset, and `lattice_symmetry` will generate the whole representation by the given generators.
-	Of course, the generators should be consistent.
+	Of course, the generators should be consistent with each other.
 
 - 	Functions `hilbert_space_sectors` and `ground_state_sectors`:
 
+	There is a possibility to generate the symmetry-adapted basis in `lattice_symmetries automatically.` One can find all sectors of the maximal abelian subgroup using `hilbert_space_sectors`,
+	or one can find all one-dimensional representations of the whole symmetry group by `ground_state_sectors`. Let's consider an example of the most straightforward example of 3-sites chain:
+	```pycon
+	import igraph as ig
+
+	e=ls.Expr("σ^x_0 σ^x_1") #A simple expression defined on an edge
+	expr=e.on(ig.Graph.Lattice(dim=[3], circular=True))
+	```
 	
+	We can find the sectors (symmetry adapted bases) using an `Expression`, as we did before.
+	
+	```pycon
+	basis_list=expr.hilbert_space_sectors()
+	```
+	
+	The result is the array of symmetrized bases for each of the possible representations of the maximal Abelian subgroup.
+	It should be noted that this list covers the whole Hilbert space and can be used for the exhaustive search of the relevant sectors.
+	One can check the corresponding representations as follows:
+	```
+	for basis in basis_list:
+		print(basis.symmetries)
+	```
+	
+	Another useful function is `ground_state_sectors`:
+	
+	```pycon
+	basis_list=expr.ground_state_sectors()
+	```
+	The result is the array of symmetrized bases for every one-dimensional representation of the whole symmetry group.
+	The bases do not cover the whole Hilbert space, but they can be used for specific purposes. For example, if the ground state is unique, it for sure lies in one of the given sectors.
+	
+	We can check, that the result is expected by printing the corresponding representations:
+	```
+	for basis in basis_list:
+		print(basis.symmetries)
+	>>>
+	[(Permutation(2), 0), (Permutation(1, 2), 1/2), (Permutation(2)(0, 1), 1/2), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 1/2)]
+	[(Permutation(2), 0), (Permutation(1, 2), 0), (Permutation(2)(0, 1), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 0)]
+	[(Permutation(2), 0), (Permutation(1, 2), 1/2), (Permutation(2)(0, 1), 1/2), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 1/2)]
+	[(Permutation(2), 0), (Permutation(1, 2), 0), (Permutation(2)(0, 1), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 0)]
+	```
+	We have 4 representations in total with commuting parity and translations.
+	
+	It is important to notice that bases are not built yet. Therefore after choosing one of the bases, one should build it using `basis.build()` to make calculations.	
 
 The last step is to make calculations in symmetry adapted basis. For that we need to create an `Operator` object.
 When making an operator, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
@@ -601,7 +644,7 @@ An operator for symmetry-adapted basis is built in the same way as without symme
 
 ```pycon
 Make an expression
-Calculate symmetries
+Calculate symmetries/choose symmetry-adapted basis
 Build symmetry-adapted basis
 
 opr=ls.Operator(expression,basis) # Make the operator in symmetry-adapted basis
