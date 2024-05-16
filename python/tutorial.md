@@ -594,7 +594,7 @@ basis.build()
 It should be noticed, that one can define a representation by any of its subset, and `lattice_symmetry` will generate the whole representation by the given generators.
 Of course, the generators should be consistent with each other.
 
-##### Functions `hilbert_space_sectors` and `ground_state_sectors` <a name="Sectors-section"></a>
+##### Functions `hilbert_space_sectors` and `ground_state_sectors` <a id="Sectors-section"></a>
 
 There is a possibility to generate the symmetry-adapted basis in `lattice_symmetries automatically.` One can find all sectors of the maximal abelian subgroup using `hilbert_space_sectors`,
 or one can find all one-dimensional representations of the whole symmetry group by `ground_state_sectors`.
