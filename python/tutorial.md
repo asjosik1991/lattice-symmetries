@@ -19,10 +19,13 @@
 		- [Symmetry as Permutations](#Symmetry-as-permutations)
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry-adapted basis](#Symmetry-adapted-basis)
+			- [Manually generated representations](#Manually-generated-representations)
+			- [Functions `hilbert_space_sectors` and `ground_state_sectors`](#Functions-hilbert-space-sectors-and-ground-state-sectors)
 - [Examples](#Examples)
     - [ED of 1D chain](#Ed-of-1d-chain)
     - [ED of Star graph](#Ed-of-star-graph)
     - [Time evolution](#Time-evolution)
+	- [Spin structure factor](#Spin-structure-factor)
 
 ## Installing
 
@@ -558,85 +561,101 @@ so that characters of group elements organize a one-dimension representation of 
 Now, we are ready to build a symmetry-adapted basis. 
 There are two main ways to do that. The first way is to generate the representations by hand, and the second is to use the built-in functions of `lattice-symmetries`.
 
-- 	Manually generated representations:
+##### Manually generated representations:
 
-	The simplest example would be:
-	```pycon
-	p = ls.Permutation([1,2,0]) #translation by 1
-	b0 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It defines the trivial character
-	b0.build()
-	```
+The simplest example would be:
+```pycon
+p = ls.Permutation([1,2,0]) #translation by 1
+b0 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(0, 1))]) #We specify the phase to be zero. It defines the trivial character
+b0.build()
+```
 
-	The order of the permutation is 3, wo we can have 2 other possible sectors:
-	```pycon
-	b1 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(1, 3))]) #The phase is 1/3, the total phase is 2/3π
-	b1.build()
+The order of the permutation is 3, wo we can have 2 other possible sectors:
+```pycon
+b1 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(1, 3))]) #The phase is 1/3, the total phase is 2/3π
+b1.build()
 
-	b2 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(2, 3))]) #The phase is 2/3, the total phase is 4/3π
-	b2.build()
-	```
-	When making calculations, one needs to choose which sectors are suitable for the given task.
+b2 = ls.SpinBasis(3, symmetries=[(p, ls.Rational(2, 3))]) #The phase is 2/3, the total phase is 4/3π
+b2.build()
+```
+When making calculations, one needs to choose which sectors are suitable for the given task.
 
-	Let's consider another example, where we will work with the symmetries of expressions:
-	```pycon
-	e=ls.Expr("σ^x_0 σ^x_1")
-	expr=e.on(ig.Graph.Full(5)) # We define our lattice to be a complete graph with 5 vertices
-	sym=expr.permutation_group()
-	rep=[(p,ls.Rational(0,1)) for p in sym] #The trivial one-dimensional representation 
-	#Notice that we can use the whole symmetry group for constructing 1D-representation
-	basis = ls.SpinBasis(5, symmetries=rep) 
-	basis.build()
-	```
+Let's consider another example, where we will work with the symmetries of expressions:
+```pycon
+e=ls.Expr("σ^x_0 σ^x_1")
+expr=e.on(ig.Graph.Full(5)) # We define our lattice to be a complete graph with 5 vertices
+sym=expr.permutation_group()
+rep=[(p,ls.Rational(0,1)) for p in sym] #The trivial one-dimensional representation 
+#Notice that we can use the whole symmetry group for constructing 1D-representation
+basis = ls.SpinBasis(5, symmetries=rep) 
+basis.build()
+```
 
-	It should be noticed, that one can define a representation by any of its subset, and `lattice_symmetry` will generate the whole representation by the given generators.
-	Of course, the generators should be consistent with each other.
+It should be noticed, that one can define a representation by any of its subset, and `lattice_symmetry` will generate the whole representation by the given generators.
+Of course, the generators should be consistent with each other.
 
-- 	Functions `hilbert_space_sectors` and `ground_state_sectors`:
+##### Functions `hilbert_space_sectors` and `ground_state_sectors`:
 
-	There is a possibility to generate the symmetry-adapted basis in `lattice_symmetries automatically.` One can find all sectors of the maximal abelian subgroup using `hilbert_space_sectors`,
-	or one can find all one-dimensional representations of the whole symmetry group by `ground_state_sectors`. Let's consider an example of the most straightforward example of 3-sites chain:
-	```pycon
-	import igraph as ig
+There is a possibility to generate the symmetry-adapted basis in `lattice_symmetries automatically.` One can find all sectors of the maximal abelian subgroup using `hilbert_space_sectors`,
+or one can find all one-dimensional representations of the whole symmetry group by `ground_state_sectors`.
+It is important to note that the function also calculate bases for different number of particles/hamming weight and spin inversion, so that the whole Hilbert space is covered. 
+Let's consider an example of the most straightforward example of 3-sites chain:
+```pycon
+import igraph as ig
 
-	e=ls.Expr("σ^x_0 σ^x_1") #A simple expression defined on an edge
-	expr=e.on(ig.Graph.Lattice(dim=[3], circular=True))
-	```
-	
-	We can find the sectors (symmetry adapted bases) using an `Expression`, as we did before.
-	
-	```pycon
-	basis_list=expr.hilbert_space_sectors()
-	```
-	
-	The result is the array of symmetrized bases for each of the possible representations of the maximal Abelian subgroup.
-	It should be noted that this list covers the whole Hilbert space and can be used for the exhaustive search of the relevant sectors.
-	One can check the corresponding representations as follows:
-	```
-	for basis in basis_list:
-		print(basis.symmetries)
-	```
-	
-	Another useful function is `ground_state_sectors`:
-	
-	```pycon
-	basis_list=expr.ground_state_sectors()
-	```
-	The result is the array of symmetrized bases for every one-dimensional representation of the whole symmetry group.
-	The bases do not cover the whole Hilbert space, but they can be used for specific purposes. For example, if the ground state is unique, it for sure lies in one of the given sectors.
-	
-	We can check, that the result is expected by printing the corresponding representations:
-	```
-	for basis in basis_list:
-		print(basis.symmetries)
-	>>>
-	[(Permutation(2), 0), (Permutation(1, 2), 1/2), (Permutation(2)(0, 1), 1/2), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 1/2)]
-	[(Permutation(2), 0), (Permutation(1, 2), 0), (Permutation(2)(0, 1), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 0)]
-	[(Permutation(2), 0), (Permutation(1, 2), 1/2), (Permutation(2)(0, 1), 1/2), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 1/2)]
-	[(Permutation(2), 0), (Permutation(1, 2), 0), (Permutation(2)(0, 1), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 0)]
-	```
-	We have 4 representations in total with commuting parity and translations.
-	
-	It is important to notice that bases are not built yet. Therefore after choosing one of the bases, one should build it using `basis.build()` to make calculations.	
+e=ls.Expr("σ^x_0 σ^x_1") #A simple expression defined on an edge
+expr=e.on(ig.Graph.Lattice(dim=[3], circular=True))
+```
+
+We can find the sectors (symmetry adapted bases) using an `Expression`, as we did before.
+
+```pycon
+basis_list=expr.hilbert_space_sectors()
+```
+
+The result is the array of symmetrized bases for each of the possible representations of the maximal Abelian subgroup, hamming weight and spin inversion.
+It should be noted that this list covers the whole Hilbert space and can be used for the exhaustive search of the relevant sectors.
+One can check the corresponding representations as follows:
+```
+for basis in basis_list:
+	print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible sectors depending on translation sector, hamming weight and spin inversion
+>>>
+[(Permutation(2), 0), (Permutation(0, 1, 2), 1/3), (Permutation(0, 2, 1), 2/3)] None -1
+[(Permutation(2), 0), (Permutation(0, 1, 2), 2/3), (Permutation(0, 2, 1), 1/3)] None -1
+[(Permutation(2), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0)] None -1
+[(Permutation(2), 0), (Permutation(0, 1, 2), 1/3), (Permutation(0, 2, 1), 2/3)] None 1
+[(Permutation(2), 0), (Permutation(0, 1, 2), 2/3), (Permutation(0, 2, 1), 1/3)] None 1
+[(Permutation(2), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0)] None 1
+```
+We see that the hamming weight is not defined, however, the spin inversion is possible, and for each value of spin inversion we have three one-dimensional representations of the translation group.
+We can also dcheck the expression indeed does not conserve the number of particles, so it is impossible to define basis for the chosen hamming weight:
+
+```pycon
+e.conserves_number_particles
+>>> False
+```
+
+Another useful function is `ground_state_sectors`:
+
+```pycon
+basis_list=expr.ground_state_sectors()
+```
+The result is the array of symmetrized bases for every one-dimensional representation of the whole symmetry group and possible values of particles/hamming weight and spin inversion.
+The bases do not cover the whole Hilbert space, but they can be used for specific purposes. For example, if the ground state is unique, it for sure lies in one of the given sectors.
+
+We can check, that the result is expected by printing the corresponding representations:
+```
+for basis in basis_list:
+	print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible sectors depending on translation sector, hamming weight and spin inversion
+>>>
+[(Permutation(2), 0), (Permutation(1, 2), 1/2), (Permutation(2)(0, 1), 1/2), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 1/2)] None -1
+[(Permutation(2), 0), (Permutation(1, 2), 0), (Permutation(2)(0, 1), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 0)] None -1
+[(Permutation(2), 0), (Permutation(1, 2), 1/2), (Permutation(2)(0, 1), 1/2), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 1/2)] None 1
+[(Permutation(2), 0), (Permutation(1, 2), 0), (Permutation(2)(0, 1), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 0)] None 1
+```
+We have 2 representations with commuting parity and translations for each values of spin inversion.
+
+It is important to notice that bases are not built yet. Therefore after choosing one of the bases, one should build it using `basis.build()` to make calculations.	
 
 The last step is to make calculations in symmetry adapted basis. For that we need to create an `Operator` object.
 When making an operator, one needs to be sure that the basis symmetries are consistent with the symmetries of the correspondning expression.
@@ -787,3 +806,13 @@ $$
 where $a=1/(2-\epsilon)$, $b=(E_g+E_s)/2$, and $\epsilon$ is a safety factor to make the spectrum of $H'$ be within $[-1,1]$.
 
 We will consider the basic version of the algorithm, where instead of usual `numpy` arrays we will use `lattice_symmetries` operators.
+
+### Spin structure factor
+
+We can use `lattice-symmetries` to calculate static spin structure factor:
+
+$$
+S({\bf q})=\frac{1}{N}\sum e^{i{\bf q}\cdot ({\bf r_i}-{\bf r_j})}\langle S_i S_j \rangle
+$$
+
+The idea is to use the symmetries of the system to make calculations faster.
