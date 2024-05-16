@@ -20,7 +20,7 @@
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry-adapted basis](#Symmetry-adapted-basis)
 			- [Manually generated representations](#Manually-generated-representations)
-			- [Functions `hilbert_space_sectors` and `ground_state_sectors`](#Functions-`hilbert-space-sectors`-and-`ground-state-sectors`)
+			- [Functions `hilbert_space_sectors` and `ground_state_sectors`](#Functions-`hilbert_space_sectors`-and-`ground_state_sectors`)
 - [Examples](#Examples)
     - [ED of 1D chain](#Ed-of-1d-chain)
     - [ED of Star graph](#Ed-of-star-graph)
@@ -618,7 +618,8 @@ It should be noted that this list covers the whole Hilbert space and can be used
 One can check the corresponding representations as follows:
 ```
 for basis in basis_list:
-	print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible sectors depending on translation sector, hamming weight and spin inversion
+	#Print all possible sectors depending on translation sector, hamming weight and spin inversion
+	print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) 
 >>>
 [(Permutation(2), 0), (Permutation(0, 1, 2), 1/3), (Permutation(0, 2, 1), 2/3)] None -1
 [(Permutation(2), 0), (Permutation(0, 1, 2), 2/3), (Permutation(0, 2, 1), 1/3)] None -1
@@ -627,7 +628,7 @@ for basis in basis_list:
 [(Permutation(2), 0), (Permutation(0, 1, 2), 2/3), (Permutation(0, 2, 1), 1/3)] None 1
 [(Permutation(2), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0)] None 1
 ```
-We see that the hamming weight is not defined, however, the spin inversion is possible, and for each value of spin inversion we have three one-dimensional representations of the translation group.
+We see that the hamming weight is not defined. However, the spin inversion is possible, and for each value of spin inversion we have three one-dimensional representations of the translation group.
 We can also check the expression indeed does not conserve the number of particles, so it is impossible to define basis for the chosen hamming weight:
 
 ```pycon
@@ -646,7 +647,8 @@ The bases do not cover the whole Hilbert space, but they can be used for specifi
 We can check, that the result is expected by printing the corresponding representations:
 ```
 for basis in basis_list:
-	print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible sectors depending on translation sector, hamming weight and spin inversion
+	#Print all possible sectors depending on translation sector, hamming weight and spin inversion
+	print(basis.symmetries, basis.hamming_weight, basis.spin_inversion)
 >>>
 [(Permutation(2), 0), (Permutation(1, 2), 1/2), (Permutation(2)(0, 1), 1/2), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 1/2)] None -1
 [(Permutation(2), 0), (Permutation(1, 2), 0), (Permutation(2)(0, 1), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0), (Permutation(0, 2), 0)] None -1
