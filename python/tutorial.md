@@ -20,7 +20,7 @@
 		- [Symmetry from Expressions](#Symmetry-from-expressions)
 		- [Symmetry-adapted basis](#Symmetry-adapted-basis)
 			- [Manually generated representations](#Manually-generated-representations)
-			- [Functions `hilbert_space_sectors` and `ground_state_sectors`](#Functions-hilbert-space-sectors-and-ground-state-sectors)
+			- [Functions `hilbert_space_sectors` and `ground_state_sectors`](#Functions-`hilbert-space-sectors`-and-`ground-state-sectors`)
 - [Examples](#Examples)
     - [ED of 1D chain](#Ed-of-1d-chain)
     - [ED of Star graph](#Ed-of-star-graph)
@@ -561,7 +561,7 @@ so that characters of group elements organize a one-dimension representation of 
 Now, we are ready to build a symmetry-adapted basis. 
 There are two main ways to do that. The first way is to generate the representations by hand, and the second is to use the built-in functions of `lattice-symmetries`.
 
-##### Manually generated representations:
+##### Manually generated representations
 
 The simplest example would be:
 ```pycon
@@ -594,7 +594,7 @@ basis.build()
 It should be noticed, that one can define a representation by any of its subset, and `lattice_symmetry` will generate the whole representation by the given generators.
 Of course, the generators should be consistent with each other.
 
-##### Functions `hilbert_space_sectors` and `ground_state_sectors`:
+##### Functions `hilbert_space_sectors` and `ground_state_sectors`
 
 There is a possibility to generate the symmetry-adapted basis in `lattice_symmetries automatically.` One can find all sectors of the maximal abelian subgroup using `hilbert_space_sectors`,
 or one can find all one-dimensional representations of the whole symmetry group by `ground_state_sectors`.
@@ -628,7 +628,7 @@ for basis in basis_list:
 [(Permutation(2), 0), (Permutation(0, 1, 2), 0), (Permutation(0, 2, 1), 0)] None 1
 ```
 We see that the hamming weight is not defined, however, the spin inversion is possible, and for each value of spin inversion we have three one-dimensional representations of the translation group.
-We can also dcheck the expression indeed does not conserve the number of particles, so it is impossible to define basis for the chosen hamming weight:
+We can also check the expression indeed does not conserve the number of particles, so it is impossible to define basis for the chosen hamming weight:
 
 ```pycon
 e.conserves_number_particles
