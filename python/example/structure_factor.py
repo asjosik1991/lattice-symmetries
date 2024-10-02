@@ -23,8 +23,6 @@ def structure_factor_nosym(qx,qy,cor_array, coords, L, N_sites): #calculate stru
         rx=square_distance(coords[i][0],L)
         ry=square_distance(coords[i][1],L)
         sf += np.exp(1j*(qx*rx+qy*ry))*cor_array[i]/N_sites #here we use that the coordinates of the site with index 0 are (0,0)
-        #print(i, rx,ry, np.exp(1j*(qx*coords[i][0]+qy*coords[i][1])), sf)
-        #print(coords[i][0],coords[i][1])
     return np.real(sf)
 
 def structure_factor_sym(qx,qy,sym_cor_array,coords, orbit_array, L,N_sites):
@@ -35,8 +33,6 @@ def structure_factor_sym(qx,qy,sym_cor_array,coords, orbit_array, L,N_sites):
             rx=square_distance(coords[i][0],L)
             ry=square_distance(coords[i][1],L)
             sf += np.exp(1j*(qx*rx+qy*ry))*sym_cor_array[orb_ind]/N_sites #here we also use that the coordinates of the site with index 0 are (0,0)
-        #print(i, rx,ry, np.exp(1j*(qx*coords[i][0]+qy*coords[i][1])), sf)
-        #print(coords[i][0],coords[i][1])
     return np.real(sf)
 
 
@@ -95,26 +91,21 @@ def main():
         list_form=symmetry.list()
         if list_form[0]==0:
             point_group.append(symmetry)
-    #print("point group", point_group)
     #The next step is to find orbits of non-zero indices. 
     #If two indices can be transformed to each other by an element of a point group, they correspond to the same correlation function C_{0,i}.
     index_array=[i for i in range(1,N_sites)]
-    #print("index array", index_array)
     orbit_array=[[0]] #zero index is always here and unique
     while index_array!=[]:
         index=index_array[0]
         index_array.remove(index)
         orbit=[index]
-        #print("orbit", orbit)
         for symmetry in point_group:
             list_form=symmetry.list()
             new_index=list_form[index]
-            #print("symmetry", symmetry, "new index", new_index)
             if new_index not in orbit:
                 orbit.append(new_index)
                 index_array.remove(new_index)
         orbit_array.append(orbit)
-    #print("orbit array", orbit_array)
     #We are ready to calculate structure factor!
     #At first we calculate correlation function for an element of an orbit, then add the correct phase factor
     sym_cor_array=[]
@@ -130,7 +121,6 @@ def main():
     for i in range(Nq):
         for j in range(Nq):
             SF_sym[i,j]=structure_factor_sym(qxs[i],qys[j],sym_cor_array,coords, orbit_array, L,N_sites)
-    #print(SF)
     np.save("sym_cors.npy", SF_sym)
 
     #Now, let's reverse the order of the symmetry calculations.
@@ -144,37 +134,93 @@ def main():
         #print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible symmetries. We have various hamming weights as well
         if basis.hamming_weight==5:
             hf_bases.append(basis)
-            print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible symmetries. We have various hamming weights as well
+            #print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible symmetries. We have various hamming weights as well
     translation_group=H_expr.abelian_permutation_group()
 
     symmetric_exprs=[]
     for orbit in orbit_array:
         if len(orbit)>1:
-            print("orbit", orbit, "basic_expr", basic_expr)
+            #print("orbit", orbit, "basic_expr", basic_expr)
             point_expr=ls.Expr("0.0 Sx0 Sx1")
             for j in orbit:
-                point_expr+=basic_expr.replace_indices({1: j})#make operator S_0S_i
-            print("point_expr", point_expr)
+                point_expr+=basic_expr.replace_indices({1: j})#make operator S_0S_i as it occurs in spin factor
+            #print("point_expr", point_expr)
             cor_expr=point_expr
             for translation in translation_group:
-                print(T)
+                #print("translation", translation)
                 cor_expr+=point_expr.replace_indices({n: n^translation for n in range(9)})
-            print(cor_expr)
+            #print("cor expr", cor_expr)
             symmetric_exprs.append(cor_expr)
     print("sym exprs", symmetric_exprs)
 
-    #Now, let's make a check, which representations will give the same answer. Let's at first focus on a specifiv value of hamming weight.
+    #Now, let's make a check, which representations will give the same answer. Let's at first focus on a specific value of hamming weight.
     for basis in hf_bases:
         print(basis.symmetries)
         basis.build()
         cor_op_sym=ls.Operator(symmetric_exprs[0],basis)
-        cor_matrix_sym=cor_op.to_dense() #make numpy matrix
+        cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
         H_op_sym=ls.Operator(H_expr,basis)
         H_matrix_sym=H_op_sym.to_dense()
-        print(cor_matrix_sym)
-        print(H_matrix_sym)
+        #print(cor_matrix_sym.shape)
+        #print(H_matrix_sym.shape)
         corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
         print("corr", corr)
+
+    #We see that we have only 3 independent values of the correlator. We can do calculate them in a more automatic way.
+    #The representations of translation group related to each other by an action of point group (lie in the same conjugacy class) give the same correlators.
+    #Let's select the representatives of the bases lying in the same conjugacy class.
+    bases_classes=[]
+    #At first we will ort all symmetries, so that we will be able to compare them
+    #for basis in hf_bases:
+    #    basis.symmetries=sorted(basis.symmetries, key=lambda x: list(x[0].array_form))
+    bases_count=hf_bases.copy()         
+    #print("point group", point_group)
+    
+    for basis in hf_basis:
+        #print("basis_symmetry", basis.symmetries) #Print the representation corresponding to the given basis
+        tb=basis.symmetries.copy()
+        conj_class=[]
+        for g in point_group:
+            for i in range(len(tb)):
+                tb[i]=(g*tb[i][0]*(g**(-1)),tb[i][1])
+            tb=sorted(tb, key=lambda x: list(x[0].array_form))
+            #print("tb", tb)
+            for bs in bases_count:
+                symsort=sorted(bs.symmetries, key=lambda x: list(x[0].array_form))
+                if symsort==tb:
+                    check=True #We check that we do not overcount bases since some elements of the point group can give the same representations
+                    for bs_check in basis_count:
+                        symsort_check=sorted(bs_check.symmetries, key=lambda x: list(x[0].array_form))
+                        if symsort_check==tb:
+                            check=False
+                            #print("check")
+                            continue
+                    if check==True:
+                        conj_class.append(bs)
+                        #print("symsort", symsort)
+                        #print("tb", tb)
+                        #print("symmetries", bs.symmetries)
+        #print(conj_class)
+        if len(conj_class)>0:
+            bases_classes.append(conj_class)
+    
+    #Now, let's check if these conjugacy classes indeed give the same results
+    for base_class in bases_classes:
+        print("base_class", base_class)
+        for bs in base_class:
+            print(bs.symmetries)
+            bs.build()
+            cor_op_sym=ls.Operator(symmetric_exprs[0],bs)
+            cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
+            H_op_sym=ls.Operator(H_expr,bs)
+            H_matrix_sym=H_op_sym.to_dense()
+            #print(cor_matrix_sym.shape)
+            #print(H_matrix_sym.shape)
+            corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
+            print("corr", corr)
+
+
+
 
 
     
