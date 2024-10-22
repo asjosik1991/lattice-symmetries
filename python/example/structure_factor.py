@@ -6,6 +6,10 @@ import scipy.linalg as linalg
 import igraph as ig
 #import matplotlib.pyplot as plt
 
+def weighted_trace(H,T):
+    exp_H=linalg.expm(-H/T) #calculate matrix exponent
+    return np.trace(exp_H)
+
 def thermal_average(observable, H, T):
     exp_H=linalg.expm(-H/T) #calculate matrix exponent
     density_matrix=exp_H/np.trace(exp_H)
@@ -36,9 +40,31 @@ def structure_factor_sym(qx,qy,sym_cor_array,coords, orbit_array, L,N_sites):
     return np.real(sf)
 
 
+def conjugate_classes(bases, point_group):
+    bases_classes=[]
+    bases_count=bases.copy()          
+    while bases_count!=[]:
+        basis = bases_count[0]
+        conj_class=[basis]
+        bases_count.remove(basis)
+        del_array=[]
+        for g in point_group:
+            tb=basis.symmetries.copy()
+            for i in range(len(tb)):
+                tb[i]=(g*tb[i][0]*(g**(-1)),tb[i][1])
+            tb=sorted(tb, key=lambda x: list(x[0].array_form))
+            for bs in bases_count:
+                if bs.symmetries==tb and (bs not in conj_class):
+                    conj_class.append(bs)
+                    del_array.append(bs)
+        for del_bs in del_array:
+            bases_count.remove(del_bs)
+        bases_classes.append(conj_class)
+        return bases_classes
+
 def main():
     
-    T=1 #temperature
+    T= 1 #temperature
     Nq=60 #discretization of q-space
     qxs = np.linspace(-3, 3, Nq)
     qys = np.linspace(-3, 3, Nq)
@@ -91,6 +117,7 @@ def main():
         list_form=symmetry.list()
         if list_form[0]==0:
             point_group.append(symmetry)
+    #print("point group", point_group)
     #The next step is to find orbits of non-zero indices. 
     #If two indices can be transformed to each other by an element of a point group, they correspond to the same correlation function C_{0,i}.
     index_array=[i for i in range(1,N_sites)]
@@ -126,98 +153,136 @@ def main():
     #Now, let's reverse the order of the symmetry calculations.
     #At first we will make a summation over different translation sectors using the translations and the action of point group.
     #The idea is to construct the observables invariant under the action of the point group so that there is the exact correspondence between different sectors of translation group.
-    #The symmetric observables are made from already calculated orbits of C_{0,i}
-
+    #We start with specific hamming weight and generate symmetric bases
     hf_bases=[] #array of bases with specific hamming weight
     translation_bases=H_expr.hilbert_space_sectors()
     for basis in translation_bases:
-        #print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible symmetries. We have various hamming weights as well
         if basis.hamming_weight==5:
             hf_bases.append(basis)
-            #print(basis.symmetries, basis.hamming_weight, basis.spin_inversion) #Print all possible symmetries. We have various hamming weights as well
     translation_group=H_expr.abelian_permutation_group()
-
+    
+    #Make symmetrized expressions for the correlators
+    #The symmetric observables are made from already calculated orbits of C_{0,i}
     symmetric_exprs=[]
     for orbit in orbit_array:
-        if len(orbit)>1:
-            #print("orbit", orbit, "basic_expr", basic_expr)
-            point_expr=ls.Expr("0.0 Sx0 Sx1")
-            for j in orbit:
-                point_expr+=basic_expr.replace_indices({1: j})#make operator S_0S_i as it occurs in spin factor
-            #print("point_expr", point_expr)
-            cor_expr=point_expr
-            for translation in translation_group:
-                #print("translation", translation)
-                cor_expr+=point_expr.replace_indices({n: n^translation for n in range(9)})
-            #print("cor expr", cor_expr)
-            symmetric_exprs.append(cor_expr)
-    print("sym exprs", symmetric_exprs)
+        point_expr=ls.Expr("0.0 Sx0 Sx1")
+        for j in orbit:
+            point_expr+=basic_expr.replace_indices({1: j})#make operator S_0S_i as it occurs in spin factor
+        
+        cor_expr=point_expr
+        for translation in translation_group:
+            cor_expr+=point_expr.replace_indices({n: n^translation for n in range(9)})
 
-    #Now, let's make a check, which representations will give the same answer. Let's at first focus on a specific value of hamming weight.
-    for basis in hf_bases:
-        print(basis.symmetries)
-        basis.build()
-        cor_op_sym=ls.Operator(symmetric_exprs[0],basis)
-        cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
-        H_op_sym=ls.Operator(H_expr,basis)
-        H_matrix_sym=H_op_sym.to_dense()
-        #print(cor_matrix_sym.shape)
-        #print(H_matrix_sym.shape)
-        corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
-        print("corr", corr)
+        norm=1/(len(orbit)*(len(translation_group)+1))#plus 1 is necessary, because in the symmetry array we don't count the identity
+        cor_expr=norm*cor_expr #here we also apply the normalization: divide by number of primitives in symmetric expression
+        symmetric_exprs.append(cor_expr)
+    
+    #Now, let's make a check, that some representations indeed give the same answer. Let's at first focus on a specific value of hamming weight.
+    #for basis in hf_bases:
+    #    print(basis.symmetries)
+    #    basis.build()
+    #    cor_op_sym=ls.Operator(symmetric_exprs[1],basis) # we pick a particular expression
+    #    cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
+    #    H_op_sym=ls.Operator(H_expr,basis)
+    #    H_matrix_sym=H_op_sym.to_dense()
+    #    corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
+    #    print("corr", corr)
 
     #We see that we have only 3 independent values of the correlator. We can do calculate them in a more automatic way.
     #The representations of translation group related to each other by an action of point group (lie in the same conjugacy class) give the same correlators.
-    #Let's select the representatives of the bases lying in the same conjugacy class.
+    #Therefore, we need to divide the bases into different conjugacy classes, and we expect the structure 4x4x1, 
+    #where one quadruple consists of representations where (k_x,k_y) is diagonal, 
+    #another quadruple consists of representations where one of momenta is zero, and the trivial representation
+
     bases_classes=[]
-    #At first we will ort all symmetries, so that we will be able to compare them
-    #for basis in hf_bases:
-    #    basis.symmetries=sorted(basis.symmetries, key=lambda x: list(x[0].array_form))
-    bases_count=hf_bases.copy()         
-    #print("point group", point_group)
-    
-    for basis in hf_basis:
-        #print("basis_symmetry", basis.symmetries) #Print the representation corresponding to the given basis
-        tb=basis.symmetries.copy()
-        conj_class=[]
+    bases_count=hf_bases.copy()          
+    while bases_count!=[]:
+        basis = bases_count[0]
+        #print("#######basis_symmetry#####", basis.symmetries) #Print the representation corresponding to the given basis
+        conj_class=[basis]
+        bases_count.remove(basis)
+        #print("BASES_COUNT", bases_count)
+        del_array=[]
         for g in point_group:
+            tb=basis.symmetries.copy()
+            #print("element of point group", g)
             for i in range(len(tb)):
                 tb[i]=(g*tb[i][0]*(g**(-1)),tb[i][1])
             tb=sorted(tb, key=lambda x: list(x[0].array_form))
-            #print("tb", tb)
+            #print("transformed basis", tb)
             for bs in bases_count:
-                symsort=sorted(bs.symmetries, key=lambda x: list(x[0].array_form))
-                if symsort==tb:
-                    check=True #We check that we do not overcount bases since some elements of the point group can give the same representations
-                    for bs_check in basis_count:
-                        symsort_check=sorted(bs_check.symmetries, key=lambda x: list(x[0].array_form))
-                        if symsort_check==tb:
-                            check=False
-                            #print("check")
-                            continue
-                    if check==True:
-                        conj_class.append(bs)
-                        #print("symsort", symsort)
-                        #print("tb", tb)
-                        #print("symmetries", bs.symmetries)
-        #print(conj_class)
-        if len(conj_class)>0:
-            bases_classes.append(conj_class)
+                if bs.symmetries==tb and (bs not in conj_class):
+                    #print("symmetries are equal")
+                    conj_class.append(bs)
+                    #print("bs_symmetries", bs.symmetries)
+                    del_array.append(bs)
+                    #print("bases_count", bases_count)
+        for del_bs in del_array:
+            bases_count.remove(del_bs)
+        bases_classes.append(conj_class)
     
+
+    #print("BASES CLASSES", bases_classes) #print conjugacy classes, so that we see that we have the correct  
     #Now, let's check if these conjugacy classes indeed give the same results
-    for base_class in bases_classes:
-        print("base_class", base_class)
-        for bs in base_class:
-            print(bs.symmetries)
+    #for base_class in bases_classes:
+    #    print("base_class", base_class)
+    #    for bs in base_class:
+    #        print(bs.symmetries)
+    #        bs.build()
+    #        cor_op_sym=ls.Operator(symmetric_exprs[1],bs)
+    #        cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
+    #        H_op_sym=ls.Operator(H_expr,bs)
+    #        H_matrix_sym=H_op_sym.to_dense()
+    #        corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
+    #        print("corr", corr)
+    
+    #It works! We still need to make a few more steps. 
+    #First, we need to obtain the correct multiplier factor to reproduce the result for the full basis with given magnetization.
+    #Next, we need to sum over all magnetizations to obtain the final result (of course, we need to add proper phases as well, but we did it before)
+    
+    #Let's proceed. We can expect that the weight of a correlator calculated in a given symmetric basis with fixed magnetization
+    #should be divided by total number of primitive expression in the symmetrized expression and multipled by the number of representations in the conjugacy lass.
+    #We also need to take into account the normalization due to the trace calculation which for high temperatures gives (dimension of subspace)/(dimension of the total space)
+    #For low temperatures, the normalilzation should take into account exponents of Hamiltonians (exp(-H_{subspace}T))/(exp(-H_{total}T))
+    
+    #Correlators in spin basis with magnetization 5 are
+    basis_m5=ls.SpinBasis(number_spins=9,hamming_weight=5)
+    basis_m5.build()
+    H_op_m5=ls.Operator(H_expr,basis_m5)
+    H_matrix_m5=H_op_m5.to_dense()#Make numpy matrix for matrix exponentiation
+    cor_array_m5=[]
+    cor_array_m5_se=[]
+    for i in range(N_sites):
+        cor_expr=basic_expr.replace_indices({1: i}) #make operator S_0S_i
+        cor_op_m5=ls.Operator(cor_expr,basis_m5)
+        cor_matrix_m5=cor_op_m5.to_dense() #make numpy matrix
+        cor_array_m5.append(thermal_average(cor_matrix_m5,H_matrix_m5,T)) #calculate observable and add to array
+    print("corrs magnetisation=5", cor_array_m5)
+    
+    #Correlators calculated from representatives
+    sym_corr_m5=[]
+    for sym_expr in symmetric_exprs:
+        sym_corr=0
+        for base_class in bases_classes:
+            bs=base_class[0]
             bs.build()
-            cor_op_sym=ls.Operator(symmetric_exprs[0],bs)
+            cor_op_sym=ls.Operator(sym_expr,bs)
             cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
             H_op_sym=ls.Operator(H_expr,bs)
             H_matrix_sym=H_op_sym.to_dense()
-            #print(cor_matrix_sym.shape)
-            #print(H_matrix_sym.shape)
             corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
-            print("corr", corr)
+            #sym_corr+=(len(base_class)*(bs.number_states)/basis_m5.number_states)*corr #for high temperatures
+            sym_corr+=(len(base_class)*weighted_trace(H_matrix_sym,T)/weighted_trace(H_matrix_m5,T))*corr #general expression
+        sym_corr_m5.append(sym_corr)
+    print("correlators calculated using translation symmetry, magnetisation=5", sym_corr_m5)
+
+    #It works! Now let's write the general cycle.
+    for hamming_weight in range(10):
+
+
+
+
+
 
 
 
