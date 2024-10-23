@@ -39,7 +39,6 @@ def structure_factor_sym(qx,qy,sym_cor_array,coords, orbit_array, L,N_sites):
             sf += np.exp(1j*(qx*rx+qy*ry))*sym_cor_array[orb_ind]/N_sites #here we also use that the coordinates of the site with index 0 are (0,0)
     return np.real(sf)
 
-
 def conjugate_classes(bases, point_group):
     bases_classes=[]
     bases_count=bases.copy()          
@@ -60,7 +59,14 @@ def conjugate_classes(bases, point_group):
         for del_bs in del_array:
             bases_count.remove(del_bs)
         bases_classes.append(conj_class)
-        return bases_classes
+    return bases_classes
+
+def pick_hamming_weight(sectors,n):
+    picked_bases=[] #array of bases with specific hamming weight
+    for basis in sectors:
+        if basis.hamming_weight==n:
+            picked_bases.append(basis)
+    return picked_bases
 
 def main():
     
@@ -154,15 +160,16 @@ def main():
     #At first we will make a summation over different translation sectors using the translations and the action of point group.
     #The idea is to construct the observables invariant under the action of the point group so that there is the exact correspondence between different sectors of translation group.
     #We start with specific hamming weight and generate symmetric bases
-    hf_bases=[] #array of bases with specific hamming weight
-    translation_bases=H_expr.hilbert_space_sectors()
-    for basis in translation_bases:
-        if basis.hamming_weight==5:
-            hf_bases.append(basis)
-    translation_group=H_expr.abelian_permutation_group()
+    #hf_bases=[] #array of bases with specific hamming weight
+    #translation_bases=H_expr.hilbert_space_sectors()
+    #for basis in translation_bases:
+    #    if basis.hamming_weight==5:
+    #        hf_bases.append(basis)
     
     #Make symmetrized expressions for the correlators
     #The symmetric observables are made from already calculated orbits of C_{0,i}
+    
+    translation_group=H_expr.abelian_permutation_group()
     symmetric_exprs=[]
     for orbit in orbit_array:
         point_expr=ls.Expr("0.0 Sx0 Sx1")
@@ -194,32 +201,32 @@ def main():
     #where one quadruple consists of representations where (k_x,k_y) is diagonal, 
     #another quadruple consists of representations where one of momenta is zero, and the trivial representation
 
-    bases_classes=[]
-    bases_count=hf_bases.copy()          
-    while bases_count!=[]:
-        basis = bases_count[0]
-        #print("#######basis_symmetry#####", basis.symmetries) #Print the representation corresponding to the given basis
-        conj_class=[basis]
-        bases_count.remove(basis)
-        #print("BASES_COUNT", bases_count)
-        del_array=[]
-        for g in point_group:
-            tb=basis.symmetries.copy()
-            #print("element of point group", g)
-            for i in range(len(tb)):
-                tb[i]=(g*tb[i][0]*(g**(-1)),tb[i][1])
-            tb=sorted(tb, key=lambda x: list(x[0].array_form))
-            #print("transformed basis", tb)
-            for bs in bases_count:
-                if bs.symmetries==tb and (bs not in conj_class):
-                    #print("symmetries are equal")
-                    conj_class.append(bs)
-                    #print("bs_symmetries", bs.symmetries)
-                    del_array.append(bs)
-                    #print("bases_count", bases_count)
-        for del_bs in del_array:
-            bases_count.remove(del_bs)
-        bases_classes.append(conj_class)
+    #bases_classes=[]
+    #bases_count=hf_bases.copy()          
+    #while bases_count!=[]:
+    #    basis = bases_count[0]
+    #    #print("#######basis_symmetry#####", basis.symmetries) #Print the representation corresponding to the given basis
+    #    conj_class=[basis]
+    #    bases_count.remove(basis)
+    #    #print("BASES_COUNT", bases_count)
+    #    del_array=[]
+    #    for g in point_group:
+    #        tb=basis.symmetries.copy()
+    #        #print("element of point group", g)
+    #        for i in range(len(tb)):
+    #            tb[i]=(g*tb[i][0]*(g**(-1)),tb[i][1])
+    #        tb=sorted(tb, key=lambda x: list(x[0].array_form))
+    #        #print("transformed basis", tb)
+    #        for bs in bases_count:
+    #            if bs.symmetries==tb and (bs not in conj_class):
+    #                #print("symmetries are equal")
+    #                conj_class.append(bs)
+    #                #print("bs_symmetries", bs.symmetries)
+    #                del_array.append(bs)
+    #                #print("bases_count", bases_count)
+    #    for del_bs in del_array:
+    #        bases_count.remove(del_bs)
+    #    bases_classes.append(conj_class)
     
 
     #print("BASES CLASSES", bases_classes) #print conjugacy classes, so that we see that we have the correct  
@@ -246,49 +253,77 @@ def main():
     #For low temperatures, the normalilzation should take into account exponents of Hamiltonians (exp(-H_{subspace}T))/(exp(-H_{total}T))
     
     #Correlators in spin basis with magnetization 5 are
-    basis_m5=ls.SpinBasis(number_spins=9,hamming_weight=5)
-    basis_m5.build()
-    H_op_m5=ls.Operator(H_expr,basis_m5)
-    H_matrix_m5=H_op_m5.to_dense()#Make numpy matrix for matrix exponentiation
-    cor_array_m5=[]
-    cor_array_m5_se=[]
-    for i in range(N_sites):
-        cor_expr=basic_expr.replace_indices({1: i}) #make operator S_0S_i
-        cor_op_m5=ls.Operator(cor_expr,basis_m5)
-        cor_matrix_m5=cor_op_m5.to_dense() #make numpy matrix
-        cor_array_m5.append(thermal_average(cor_matrix_m5,H_matrix_m5,T)) #calculate observable and add to array
-    print("corrs magnetisation=5", cor_array_m5)
+    #basis_m5=ls.SpinBasis(number_spins=9,hamming_weight=5)
+    #basis_m5.build()
+    #H_op_m5=ls.Operator(H_expr,basis_m5)
+    #H_matrix_m5=H_op_m5.to_dense()#Make numpy matrix for matrix exponentiation
+    #cor_array_m5=[]
+    #cor_array_m5_se=[]
+    #for i in range(N_sites):
+    #    cor_expr=basic_expr.replace_indices({1: i}) #make operator S_0S_i
+    #    cor_op_m5=ls.Operator(cor_expr,basis_m5)
+    #    cor_matrix_m5=cor_op_m5.to_dense() #make numpy matrix
+    #    cor_array_m5.append(thermal_average(cor_matrix_m5,H_matrix_m5,T)) #calculate observable and add to array
+    #print("corrs magnetisation=5", cor_array_m5)
     
     #Correlators calculated from representatives
-    sym_corr_m5=[]
-    for sym_expr in symmetric_exprs:
-        sym_corr=0
-        for base_class in bases_classes:
-            bs=base_class[0]
-            bs.build()
-            cor_op_sym=ls.Operator(sym_expr,bs)
-            cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
-            H_op_sym=ls.Operator(H_expr,bs)
-            H_matrix_sym=H_op_sym.to_dense()
-            corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
-            #sym_corr+=(len(base_class)*(bs.number_states)/basis_m5.number_states)*corr #for high temperatures
-            sym_corr+=(len(base_class)*weighted_trace(H_matrix_sym,T)/weighted_trace(H_matrix_m5,T))*corr #general expression
-        sym_corr_m5.append(sym_corr)
-    print("correlators calculated using translation symmetry, magnetisation=5", sym_corr_m5)
+    #sym_corr_m5=[]
+    #for sym_expr in symmetric_exprs:
+    #    sym_corr=0
+    #    for base_class in bases_classes:
+    #        bs=base_class[0]
+    #        bs.build()
+    #        cor_op_sym=ls.Operator(sym_expr,bs)
+    #        cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
+    #        H_op_sym=ls.Operator(H_expr,bs)
+    #        H_matrix_sym=H_op_sym.to_dense()
+    #        corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
+    #        #sym_corr+=(len(base_class)*(bs.number_states)/basis_m5.number_states)*corr #for high temperatures
+    #        sym_corr+=(len(base_class)*weighted_trace(H_matrix_sym,T)/weighted_trace(H_matrix_m5,T))*corr #general expression
+    #    sym_corr_m5.append(sym_corr)
+    #print("correlators calculated using translation symmetry, magnetisation=5", sym_corr_m5)
 
     #It works! Now let's write the general cycle.
-    for hamming_weight in range(10):
-
-
-
-
-
-
-
-
-
-
     
+    
+    translation_bases=H_expr.hilbert_space_sectors()
+    sym_corr_full=[]
+    for sym_expr in symmetric_exprs:
+        print("the correlator for this expression is being calculated", sym_expr)
+        sym_corr=0
+        full_trace=weighted_trace(H_matrix,T)
+        for hamming_weight in range(10):
+            print("hamming weight", hamming_weight)
+            hf_bases=pick_hamming_weight(translation_bases, hamming_weight)
+            #print("bases", hf_bases)
+            bases_classes=conjugate_classes(hf_bases, point_group)
+            #print("bases classes", bases_classes)
+            for base_class in bases_classes:
+                bs=base_class[0]
+                bs.build()
+                cor_op_sym=ls.Operator(sym_expr,bs)
+                cor_matrix_sym=cor_op_sym.to_dense() #make numpy matrix
+                H_op_sym=ls.Operator(H_expr,bs)
+                H_matrix_sym=H_op_sym.to_dense()
+                corr=thermal_average(cor_matrix_sym,H_matrix_sym,T) #calculate observable
+                #sym_corr+=(len(base_class)*(bs.number_states)/basis_m5.number_states)*corr #for high temperatures
+                sym_corr+=(len(base_class)*weighted_trace(H_matrix_sym,T)/full_trace)*corr #general expression
+        sym_corr_full.append(sym_corr)
+    print("correlators calculated from all hilbert sectors", sym_corr_full)
 
+    #Everything works!
+    #Let's plot some figures!
+    SF_sym_full=np.zeros((Nq,Nq))
+    for i in range(Nq):
+        for j in range(Nq):
+            SF_sym_full[i,j]=structure_factor_sym(qxs[i],qys[j],sym_corr_full,coords, orbit_array, L,N_sites)
+    np.save("sym_corr_full.npy", SF_sym_full)
+    
+    #plot structure factor
+    #h = plt.contourf(x, y, SF_sym_full)
+    #plt.axis('scaled')
+    #plt.colorbar()
+    #plt.savefig("structure_factor_using_translations.png")
+    #plt.close()
 
 main()
